@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "StreamerWinui (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "StreamerWinui (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
