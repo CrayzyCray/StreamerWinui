@@ -19,7 +19,7 @@ namespace StreamerWinui
     public sealed partial class MainWindow : Window
     {
         const double defaultFramerate = 30;
-        const string defaultIpToStream = "localhost";
+        const string defaultIpToStream = "192.168.0.115";
 
         StreamSession streamSession;
 
@@ -50,10 +50,17 @@ namespace StreamerWinui
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
             var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
             appWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 240, Height = 300 });
+
+            StreamSession.inicialize();
+            //startStreamButton_Click(null, null);
         }
 
         private void startStreamButton_Click(object sender, RoutedEventArgs e)
         {
+            showConsoleCheckBox.IsEnabled = streamSession.StreamIsActive;
+            framerateTextBlock.IsEnabled = streamSession.StreamIsActive;
+            ipTextBlock.IsEnabled = streamSession.StreamIsActive;
+
             if (!streamSession.StreamIsActive)
             {
                 double framerate = defaultFramerate;
@@ -70,21 +77,16 @@ namespace StreamerWinui
                     ipToStream = ipTextBlock.Text;
 
                 string codec = streamSession.supportedCodecs[codecComboBox.SelectedIndex].name;
-
                 streamSession.startStream(codec, framerate, ipToStream, showConsoleCheckBox.IsChecked.GetValueOrDefault());
+                
                 startStreamButton.Content = "Stop";
-                showConsoleCheckBox.IsEnabled = false;
-                framerateTextBlock.IsEnabled = false;
-                ipTextBlock.IsEnabled = false;
             }
             else
             {
                 streamSession.stopStream();
                 startStreamButton.Content = "Start";
-                showConsoleCheckBox.IsEnabled = true;
-                framerateTextBlock.IsEnabled = true;
-                ipTextBlock.IsEnabled = true;
             }
+                
         }
     }
 }
