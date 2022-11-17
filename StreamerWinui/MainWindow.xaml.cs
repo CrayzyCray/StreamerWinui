@@ -18,8 +18,8 @@ namespace StreamerWinui
 {
     public sealed partial class MainWindow : Window
     {
-        const double defaultFramerate = 30;
-        const string defaultIpToStream = "192.168.0.115";
+        public const string defaultFramerate = "64";
+        public const string defaultIpToStream = "localhost";
 
         StreamSession streamSession;
 
@@ -27,8 +27,7 @@ namespace StreamerWinui
         {
             this.InitializeComponent();
 
-            //выключение корировщика при закрытии
-            this.Closed += (s, e) => { if (streamSession.StreamIsActive) { streamSession.stopStream(); } };
+            //this.Closed += (s, e) => { if (streamSession.StreamIsActive) { streamSession.stopStream(); } };//выключение корировщика при закрытии
 
             streamSession = new StreamSession();
 
@@ -52,7 +51,7 @@ namespace StreamerWinui
             appWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 240, Height = 300 });
 
             StreamSession.inicialize();
-            //startStreamButton_Click(null, null);
+            startStreamButton_Click(null, null);
         }
 
         private void startStreamButton_Click(object sender, RoutedEventArgs e)
@@ -63,13 +62,14 @@ namespace StreamerWinui
 
             if (!streamSession.StreamIsActive)
             {
-                double framerate = defaultFramerate;
+                string framerate = defaultFramerate;
                 string ipToStream = defaultIpToStream;
 
                 if (framerateTextBlock.Text != "")
                     try
                     {
-                        framerate = Convert.ToDouble(framerateTextBlock.Text);
+                        Convert.ToDouble(framerateTextBlock.Text);
+                        framerate = framerateTextBlock.Text;
                     }
                     catch { }
 
