@@ -77,7 +77,7 @@ namespace StreamerWinui
                     ipToStream = ipTextBlock.Text;
 
                 string codec = streamSession.supportedCodecs[codecComboBox.SelectedIndex].name;
-                streamSession.startStream(codec, framerate, ipToStream, showConsoleCheckBox.IsChecked.GetValueOrDefault());
+                //streamSession.startStream(codec, framerate, ipToStream, showConsoleCheckBox.IsChecked.GetValueOrDefault());
                 
                 startStreamButton.Content = "Stop";
             }
