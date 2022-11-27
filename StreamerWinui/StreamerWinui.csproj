@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net6.0-windows10.0.19041</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>StreamerWinui</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -21,7 +21,7 @@
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <StartupObject>StreamerWinui.Test</StartupObject>
+    <StartupObject>StreamerWinui.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
