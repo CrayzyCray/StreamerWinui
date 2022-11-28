@@ -31,7 +31,7 @@ namespace StreamerWinui
             //pixFmtConv1 = new PixelFormatConverter();
 
             fixed (Ddagrab* ddagrab = &ddagrab1)
-            fixed (Encoder* encoder = &encoder1) 
+            fixed (Encoder* encoder = &encoder1)
             //fixed (PixelFormatConverter* pixFmtConv = &pixFmtConv1)
             {
                 //инициализация ddagrab
@@ -43,13 +43,6 @@ namespace StreamerWinui
                 response = ffmpeg.avcodec_parameters_to_context(ddagrab->codecContext, ddagrab->codecParameters);
                 response = ffmpeg.avcodec_open2(ddagrab->codecContext, ddagrab->codec, null);
 
-                //инициализация выходного формата
-                AVFormatContext* outputFormatContext = null;
-                AVOutputFormat* outputFormat = null;
-                outputFormat = ffmpeg.av_guess_format(format, null, null);
-                debugLogUnmanagedPtr(outputFormat->long_name);
-                Debug.WriteLine("fps = " + ddagrab->formatContext->streams[0]->avg_frame_rate.num + "/" + ddagrab->formatContext->streams[0]->avg_frame_rate.den);
-
                 //encoder setup
                 encoder->codec = ffmpeg.avcodec_find_encoder_by_name("hevc_nvenc");
                 encoder->codecContext = ffmpeg.avcodec_alloc_context3(encoder->codec);
@@ -57,17 +50,9 @@ namespace StreamerWinui
                 encoder->codecContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_D3D11;
                 encoder->codecContext->width = ddagrab->codecContext->width;
                 encoder->codecContext->height = ddagrab->codecContext->height;
-                response = ffmpeg.avcodec_open2(encoder->codecContext, encoder->codec, null);
 
-                AVCodecHWConfig* codecHWConfig;
-                for (int i = 0;; i++)
-                {
-                    codecHWConfig = ffmpeg.avcodec_get_hw_config(encoder->codec, i);
-                    if (codecHWConfig->device_type == AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA && codecHWConfig->pix_fmt == AVPixelFormat.AV_PIX_FMT_D3D11)
-                        break;
-                }
-                if (codecHWConfig == null)
-                    throw new Exception("Hw device not found");
+                //AVBufferRef* hwDeviceCtx = null;
+                //response = ffmpeg.av_hwdevice_ctx_create(&hwDeviceCtx, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
 
                 //AVHWDeviceContext* hwDeviceContext = ffmpeg.av_hwdevice_ctx_alloc(AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA);
                 //AVHWFramesContext* frameContext = ffmpeg.av_hwframe_ctx_alloc(null);
@@ -89,17 +74,43 @@ namespace StreamerWinui
                     //response = ffmpeg.avfilter_graph_parse_ptr(pixFmtConv->filterGraph, "format=rgba", &pixFmtConv->inputs, &pixFmtConv->outputs, null);
                     //response = ffmpeg.avfilter_graph_config(pixFmtConv->filterGraph, null);
                 }
+
+
+
+
+                AVBufferRef* hwDeviceContext = null;
+                response = ffmpeg.av_hwdevice_ctx_create(&hwDeviceContext, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
+
+
+                response = ffmpeg.av_read_frame(ddagrab->formatContext, ddagrab->packet);
+                response = ffmpeg.avcodec_send_packet(ddagrab->codecContext, ddagrab->packet);
+                response = ffmpeg.avcodec_receive_frame(ddagrab->codecContext, ddagrab->frame);
+                encoder->codecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(ddagrab->frame->hw_frames_ctx);
+                //encoder->codecContext->hw_device_ctx = ffmpeg.av_buffer_ref(hwDeviceCtx);
+                //AVHWFramesContext* hwFramesContext = ffmpeg.av_hwframe_ctx_alloc(hwDeviceContext);
+                response = ffmpeg.avcodec_open2(encoder->codecContext, encoder->codec, null);
+
+                //инициализация выходного формата
+                AVOutputFormat* outputFormat = ffmpeg.av_guess_format(format, null, null);
+                debugLogUnmanagedPtr(outputFormat->long_name);
+                Debug.WriteLine("fps = " + ddagrab->formatContext->streams[0]->avg_frame_rate.num + "/" + ddagrab->formatContext->streams[0]->avg_frame_rate.den);
+                AVFormatContext* outputFormatContext = null;
+                response = ffmpeg.avformat_alloc_output_context2(&outputFormatContext, outputFormat, null, null);
+                AVStream* g = ffmpeg.avformat_new_stream(outputFormatContext, encoder->codec);
+                response = ffmpeg.avcodec_parameters_from_context(g->codecpar, encoder->codecContext);
+                ffmpeg.avio_open(&outputFormatContext->pb, $"D:\\video\\img\\1.{format}", 2);
+                response = ffmpeg.avformat_write_header(outputFormatContext, null);
+
+
                 //получение и сохранение кадров
-                response = ffmpeg.avformat_alloc_output_context2(&outputFormatContext, outputFormat, null, $"D:\\video\\img\\1.{format}");
-                ffmpeg.avformat_new_stream(outputFormatContext, encoder->codec);
                 for (int i = 0; i < 60; i++)
                 {
                     response = ffmpeg.av_read_frame(ddagrab->formatContext, ddagrab->packet);
                     response = ffmpeg.avcodec_send_packet(ddagrab->codecContext, ddagrab->packet);
                     response = ffmpeg.avcodec_receive_frame(ddagrab->codecContext, ddagrab->frame);
+                    //encoder->codecContext->hw_frames_ctx = ddagrab->frame->hw_frames_ctx;
                     response = ffmpeg.avcodec_send_frame(encoder->codecContext, ddagrab->frame);
                     response = ffmpeg.avcodec_receive_packet(encoder->codecContext, encoder->packet);
-                    response = ffmpeg.avformat_write_header(outputFormatContext, null);
                     response = ffmpeg.av_write_frame(outputFormatContext, encoder->packet);
                     ffmpeg.av_packet_unref(encoder->packet);
                 }
@@ -108,18 +119,28 @@ namespace StreamerWinui
             streamIsActive = true;
         }
 
+        public static void errStrPrint(int err)
+        {
+            byte[] str1 = new byte[64];
+            fixed (byte* str2 = str1)
+            {
+                ffmpeg.av_make_error_string(str2, 64, err);
+                debugLogUnmanagedPtr(str2);
+            }
+        }
+
         public void stopStream()
         {
             ddagrab1.freeContexts();
             streamIsActive = false;
         }
 
-        public void debugLogUnmanagedPtr(byte* ptr)
+        public static void debugLogUnmanagedPtr(byte* ptr)
         {
             Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
         }
 
-        public string unmanagedPtrToString(byte* ptr)
+        public static string unmanagedPtrToString(byte* ptr)
         {
             return Marshal.PtrToStringAnsi((IntPtr)ptr);
         }
@@ -135,7 +156,7 @@ namespace StreamerWinui
             public string name { get; }
         }
 
-        public Codec[] supportedCodecs =
+        public static Codec[] supportedCodecs =
         {
             new Codec("hevc Nvidia", "hevc_nvenc"),
             new Codec("hevc AMD", "hevc_amf"),
