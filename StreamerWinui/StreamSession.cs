@@ -58,7 +58,7 @@ namespace StreamerWinui
                 encoder->codecContext->width = ddagrab->codecContext->width;
                 encoder->codecContext->height = ddagrab->codecContext->height;
                 response = ffmpeg.avcodec_open2(encoder->codecContext, encoder->codec, null);
-
+                
                 AVCodecHWConfig* codecHWConfig;
                 for (int i = 0;; i++)
                 {
