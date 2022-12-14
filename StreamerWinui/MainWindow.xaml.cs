@@ -33,7 +33,7 @@ namespace StreamerWinui
 
             //заполнение codecComboBox
             List<string> userFriendlyCodecNames = new List<string>();
-            foreach (var item in streamSession.supportedCodecs)
+            foreach (var item in StreamSession.supportedCodecs)
             {
                 userFriendlyCodecNames.Add(item.userFriendlyName);
             }
@@ -49,9 +49,6 @@ namespace StreamerWinui
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
             var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
             appWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 240, Height = 300 });
-
-            StreamSession.inicialize();
-            startStreamButton_Click(null, null);
         }
 
         private void startStreamButton_Click(object sender, RoutedEventArgs e)
@@ -76,8 +73,8 @@ namespace StreamerWinui
                 if (ipTextBlock.Text != "")
                     ipToStream = ipTextBlock.Text;
 
-                string codec = streamSession.supportedCodecs[codecComboBox.SelectedIndex].name;
-                //streamSession.startStream(codec, framerate, ipToStream, showConsoleCheckBox.IsChecked.GetValueOrDefault());
+                string codec = StreamSession.supportedCodecs[codecComboBox.SelectedIndex].name;
+                streamSession.startStream("mpegts");
                 
                 startStreamButton.Content = "Stop";
             }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.IO;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using FFmpeg.AutoGen.Abstractions;
@@ -12,109 +12,97 @@ using System.Runtime.Serialization;
 
 namespace StreamerWinui
 {
-    public unsafe class StreamSession
+    public class StreamSession
     {
         public bool StreamIsActive { get { return streamIsActive; } }
+        public Thread thread { get;}
 
         bool streamIsActive = false;
-        unsafe Ddagrab ddagrab1;
-        unsafe Encoder encoder1;
+        unsafe Ddagrab ddagrab;
+        unsafe Encoder encoder;
+        bool stopStreamFlag = false;
         int response;
+        string format = "";
+        string codecName = "";
+        string framerate = "";
+        string ipToStream = "";
+        string outputUrl = "";
 
-        public unsafe void startStream(string format, string codecName = "", string framerate = "30", string ipToStream = "localhost", bool showConsole = false)
+        public unsafe void startStream(string formatStream, string codecNameStream = "", string framerateStream = "30", string ipToStreamStream = "localhost", bool showConsoleStream = false)
         {
-            ddagrab1 = new Ddagrab();
-            encoder1 = new Encoder();
-
-            fixed (Ddagrab* ddagrab = &ddagrab1)
-            fixed (Encoder* encoder = &encoder1)
-            {
-                ddagrab->init("video_size=800x600");
-                encoder->initHevcNvenc(ddagrab->formatContext);
-
-                //инициализация выходного формата
-                AVOutputFormat* outputFormat = ffmpeg.av_guess_format(format, null, null);
-                debugLogUnmanagedPtr(outputFormat->long_name);
-                Debug.WriteLine("fps = " + ddagrab->formatContext->streams[0]->avg_frame_rate.num + "/" + ddagrab->formatContext->streams[0]->avg_frame_rate.den);
-                AVFormatContext* outputFormatContext = null;
-                response = ffmpeg.avformat_alloc_output_context2(&outputFormatContext, outputFormat, null, null);
-                ffmpeg.avformat_new_stream(outputFormatContext, encoder->codec);
-                response = ffmpeg.avcodec_parameters_from_context(outputFormatContext->streams[0]->codecpar, encoder->codecContext);
-                outputFormatContext->streams[0]->time_base = ddagrab->formatContext->streams[0]->time_base;
-                
-                if (format == "mpegts")
-                    response = ffmpeg.avio_open(&outputFormatContext->pb, $"rist://localhost:10000", 2);
-                else
-                    response = ffmpeg.avio_open(&outputFormatContext->pb, $"D:\\video\\img\\%0000000000d.{format}", 2);
-
-                response = ffmpeg.avformat_write_header(outputFormatContext, null);
-
-
-
-                AVFrame* frame = ffmpeg.av_frame_alloc(); //frame for copyng hwframes from decoder to encoder
-
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                //получение и сохранение кадров
-                for (int i = 0; i < 500; i++)
-                {
-                    response = ffmpeg.av_read_frame(ddagrab->formatContext, ddagrab->packet);
-                    response = ffmpeg.avcodec_send_packet(ddagrab->codecContext, ddagrab->packet);
-                    response = ffmpeg.avcodec_receive_frame(ddagrab->codecContext, ddagrab->frame);
-                    response = ffmpeg.av_hwframe_transfer_data(frame, ddagrab->frame, 0);
-                    response = ffmpeg.av_hwframe_transfer_data(encoder->hwFrame, frame, 0);
-                    //response = ffmpeg.av_hwframe_transfer_data(hwFrame, ddagrab->frame, 0);
-                    ffmpeg.av_frame_copy_props(encoder->hwFrame, ddagrab->frame);
-                    ffmpeg.av_frame_unref(frame);
-                    ffmpeg.av_frame_unref(ddagrab->frame);
-
-                    response = ffmpeg.avcodec_send_frame(encoder->codecContext, encoder->hwFrame);
-                    response = ffmpeg.avcodec_receive_packet(encoder->codecContext, encoder->packet);
-                    if (response == 0) 
-                    {
-                        if (outputFormatContext->streams[0]->start_time < 0)
-                        {
-                            outputFormatContext->streams[0]->start_time = encoder->packet->pts;
-                        }
-                        //Debug.WriteLine($"packet pts {ddagrab->packet->pts} dts {ddagrab->packet->dts}");
-                        Debug.WriteLine($"frame {encoder->codecContext->frame_number} pts {encoder->hwFrame->pts} dts {encoder->hwFrame->pkt_dts}");
-                        response = ffmpeg.av_interleaved_write_frame(outputFormatContext, encoder->packet);
-                    }
-                    ffmpeg.av_packet_unref(ddagrab->packet);
-                    Console.WriteLine(encoder->codecContext->frame_number);
-                }
-                stopwatch.Stop();
-                Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-                ffmpeg.avio_close(outputFormatContext->pb);
-                ffmpeg.avformat_free_context(outputFormatContext);
-            }
+            format = formatStream;
+            codecName = codecNameStream;
+            framerate = framerateStream;
+            ipToStream = ipToStreamStream;
+            thread.Start();
             streamIsActive = true;
+        }
+
+        public unsafe void startProcess()
+        {
+            ddagrab = new Ddagrab();
+            encoder = new Encoder();
+
+            //ddagrab.init();
+            ddagrab.init("video_size=800x600");
+            encoder.initHevcNvenc(ddagrab.formatContext, ddagrab.hwFrame->hw_frames_ctx);
+
+            if (format == "mpegts")
+                outputUrl = $"rist://localhost:10000";
+            else
+                outputUrl = $"D:\\video\\img\\1.{format}";
+
+            //инициализация выходного формата
+            AVOutputFormat* outputFormat = ffmpeg.av_guess_format(format, null, null);
+            debugLogUnmanagedPtr(outputFormat->long_name);
+            AVFormatContext* outputFormatContext = null;
+            response = ffmpeg.avformat_alloc_output_context2(&outputFormatContext, outputFormat, null, outputUrl);
+            var s = ffmpeg.avformat_new_stream(outputFormatContext, encoder.codec);
+            response = ffmpeg.avcodec_parameters_from_context(outputFormatContext->streams[0]->codecpar, encoder.codecContext);
+            outputFormatContext->streams[0]->time_base.num = ddagrab.formatContext->streams[0]->avg_frame_rate.den;
+            outputFormatContext->streams[0]->time_base.den = ddagrab.formatContext->streams[0]->avg_frame_rate.num;
+            response = ffmpeg.avio_open(&outputFormatContext->pb, outputUrl, 2);
+            response = ffmpeg.avformat_write_header(outputFormatContext, null);
+
+
+            //main loop
+            while (true)
+            {
+                if (stopStreamFlag)
+                    break;
+
+                response = ffmpeg.av_read_frame(ddagrab.formatContext, ddagrab.packet);
+                response = ffmpeg.avcodec_send_packet(ddagrab.codecContext, ddagrab.packet);
+                response = ffmpeg.avcodec_receive_frame(ddagrab.codecContext, ddagrab.hwFrame);
+                response = ffmpeg.avcodec_send_frame(encoder.codecContext, ddagrab.hwFrame);
+                response = ffmpeg.avcodec_receive_packet(encoder.codecContext, encoder.packet);
+
+                ffmpeg.av_packet_rescale_ts(encoder.packet, encoder.codecContext->time_base, outputFormatContext->streams[0]->time_base);
+                if (response == 0) 
+                    response = ffmpeg.av_write_frame(outputFormatContext, encoder.packet);
+                ffmpeg.av_packet_unref(ddagrab.packet);
+                Console.WriteLine($"frame {encoder.codecContext->frame_number} writed");
+            }
+
+            response = ffmpeg.av_write_trailer(outputFormatContext);
+            ffmpeg.avio_close(outputFormatContext->pb);
+            ffmpeg.avformat_free_context(outputFormatContext);
+            ffmpeg.avformat_free_context(ddagrab.formatContext);
+
+            stopStreamFlag = false;
+            streamIsActive = false;
         }
 
         public void stopStream()
         {
-            streamIsActive = false;
+            stopStreamFlag = true;
         }
 
-        public static void errStrPrint(int err)
+        public StreamSession()
         {
-            byte[] str1 = new byte[64];
-            fixed (byte* str2 = str1)
-            {
-                ffmpeg.av_make_error_string(str2, 64, err);
-                debugLogUnmanagedPtr(str2);
-            }
-        }
-
-        public static void debugLogUnmanagedPtr(byte* ptr)
-        {
-            Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
-        }
-
-        public static string unmanagedPtrToString(byte* ptr)
-        {
-            string? str = Marshal.PtrToStringAnsi((IntPtr)ptr);
-            return str ?? "";
+            if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
+                inicialize();
+            thread = new Thread(startProcess);
         }
 
         public static Codec[] supportedCodecs =
@@ -124,6 +112,26 @@ namespace StreamerWinui
             new Codec("h264 Nvidia", "h264_nvenc"),
             new Codec("h264 AMD", "h264_amf"),
         };
+
+        public unsafe static void errStrPrint(int errNum)
+        {
+            byte[] str1 = new byte[64];
+            fixed (byte* str2 = str1)
+            {
+                ffmpeg.av_make_error_string(str2, 64, errNum);
+                debugLogUnmanagedPtr(str2);
+            }
+        }
+
+        public unsafe static void debugLogUnmanagedPtr(byte* ptr)
+        {
+            Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
+        }
+
+        public unsafe static string unmanagedPtrToString(byte* ptr)
+        {
+            return Marshal.PtrToStringAnsi((IntPtr)ptr) ?? "";
+        }
 
         public static void inicialize()
         {
@@ -140,12 +148,6 @@ namespace StreamerWinui
         static void setFFMpegBinaresPath(string path) 
         { 
             DynamicallyLoadedBindings.LibrariesPath = path; 
-        }
-
-        public StreamSession()
-        {
-            if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
-                inicialize();
         }
     }
 }

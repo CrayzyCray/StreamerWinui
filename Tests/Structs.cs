@@ -1,4 +1,5 @@
 ﻿using FFmpeg.AutoGen.Abstractions;
+using System;
 
 namespace StreamerWinui
 {
@@ -10,7 +11,7 @@ namespace StreamerWinui
         public AVCodec* codec;
         public AVCodecContext* codecContext;
         public AVPacket* packet;
-        public AVFrame* frame;
+        public AVFrame* hwFrame;
 
         public Ddagrab()
         {
@@ -21,10 +22,14 @@ namespace StreamerWinui
             codec = null;
             codecContext = null;
             packet = ffmpeg.av_packet_alloc();
-            frame = ffmpeg.av_frame_alloc();
+            hwFrame = ffmpeg.av_frame_alloc();
         }
 
-        public void init(string ddagrabParameters)
+        /// <summary>
+        /// init ddagrab and read first frame
+        /// </summary>
+        /// <param name="ddagrabParameters"></param>
+        public void init(string ddagrabParameters = "")
         {
             IntPtr ptr = (IntPtr)formatContext;
             ffmpeg.avformat_open_input((AVFormatContext**)&ptr, $"ddagrab={ddagrabParameters}", inputFormat, null);
@@ -34,6 +39,19 @@ namespace StreamerWinui
             codecContext = ffmpeg.avcodec_alloc_context3(codec);
             ffmpeg.avcodec_parameters_to_context(codecContext, codecParameters);
             ffmpeg.avcodec_open2(codecContext, codec, null);
+
+            ffmpeg.av_read_frame(formatContext, packet);
+            ffmpeg.avcodec_send_packet(codecContext, packet);
+            ffmpeg.avcodec_receive_frame(codecContext, hwFrame);
+        }
+
+        public void free()
+        {
+            IntPtr ptr;
+            ptr = (IntPtr)inputFormat;
+            ffmpeg.av_free(ptr.ToPointer());
+            ptr = (IntPtr)codecContext;
+            ffmpeg.avcodec_free_context((AVCodecContext**)&ptr);
         }
     }
 
@@ -59,7 +77,7 @@ namespace StreamerWinui
         /// works only with d3d11 and bgra
         /// </summary>
         /// <param name="formatContext"></param>
-        public void initHevcNvenc(AVFormatContext* formatContext)
+        public void initHevcNvenc(AVFormatContext* formatContext, AVBufferRef* hwFramesContextNew)
         {
             codec = ffmpeg.avcodec_find_encoder_by_name("hevc_nvenc");
             codecContext = ffmpeg.avcodec_alloc_context3(codec);
@@ -71,17 +89,17 @@ namespace StreamerWinui
             codecContext->framerate = ffmpeg.av_guess_frame_rate(null, formatContext->streams[0], null);
 
             //hwframes
-            AVBufferRef* hwDeviceContext = null;
-            ffmpeg.av_hwdevice_ctx_create(&hwDeviceContext, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
-            AVBufferRef* hwFramesRef = ffmpeg.av_hwframe_ctx_alloc(hwDeviceContext);
-            AVHWFramesContext* hwFramesContext = (AVHWFramesContext*)(hwFramesRef->data);
-            hwFramesContext->format = AVPixelFormat.AV_PIX_FMT_D3D11;
-            hwFramesContext->sw_format = AVPixelFormat.AV_PIX_FMT_BGRA;
-            hwFramesContext->width = codecContext->width;
-            hwFramesContext->height = codecContext->height;
-            ffmpeg.av_hwframe_ctx_init(hwFramesRef);
+            //AVBufferRef* hwDeviceContext = null;
+            //ffmpeg.av_hwdevice_ctx_create(&hwDeviceContext, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
+            //AVBufferRef* hwFramesRef = ffmpeg.av_hwframe_ctx_alloc(hwDeviceContext);
+            //AVHWFramesContext* hwFramesContext = (AVHWFramesContext*)(hwFramesRef->data);
+            //hwFramesContext->format = AVPixelFormat.AV_PIX_FMT_D3D11;
+            //hwFramesContext->sw_format = AVPixelFormat.AV_PIX_FMT_BGRA;
+            //hwFramesContext->width = codecContext->width;
+            //hwFramesContext->height = codecContext->height;
+            //ffmpeg.av_hwframe_ctx_init(hwFramesRef);
 
-            codecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesRef);
+            codecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesContextNew);
             ffmpeg.av_hwframe_get_buffer(codecContext->hw_frames_ctx, hwFrame, 0);
 
             ffmpeg.avcodec_open2(codecContext, codec, null);
