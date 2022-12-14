@@ -87,7 +87,6 @@ namespace StreamerWinui
             response = ffmpeg.av_write_trailer(outputFormatContext);
             ffmpeg.avio_close(outputFormatContext->pb);
             ffmpeg.avformat_free_context(outputFormatContext);
-            ffmpeg.avformat_free_context(ddagrab.formatContext);
 
             stopStreamFlag = false;
             streamIsActive = false;
