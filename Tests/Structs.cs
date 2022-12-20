@@ -40,7 +40,7 @@ namespace StreamerWinui
             timebaseMin.den = formatContext->streams[0]->avg_frame_rate.num;
         }
 
-        public void free()
+        public void Free()
         {
             ffmpeg.av_free(inputFormat);
             fixed(AVCodecContext** ptr = &codecContext)
@@ -54,25 +54,15 @@ namespace StreamerWinui
         public AVCodecParameters* codecParameters;
         public AVCodecContext* codecContext;
         public AVPacket* packet;
-        public AVFrame* hwFrame;
 
-        public Encoder()
+        public Encoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContextNew, string hardwareEncoderName)
         {
             codec = null;
             codecParameters = ffmpeg.avcodec_parameters_alloc();
             codecContext = null;
             packet = ffmpeg.av_packet_alloc();
-            hwFrame = ffmpeg.av_frame_alloc();
-        }
-
-        /// <summary>
-        /// parameters gets form this field
-        /// works only with d3d11 and bgra
-        /// </summary>
-        /// <param name="formatContext"></param>
-        public void initHevcNvenc(AVFormatContext* formatContext, AVBufferRef* hwFramesContextNew)
-        {
-            codec = ffmpeg.avcodec_find_encoder_by_name("hevc_nvenc");
+            
+            codec = ffmpeg.avcodec_find_encoder_by_name(hardwareEncoderName);
             codecContext = ffmpeg.avcodec_alloc_context3(codec);
             codecContext->time_base = formatContext->streams[0]->time_base;
             codecContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_D3D11;
@@ -80,11 +70,8 @@ namespace StreamerWinui
             codecContext->height = formatContext->streams[0]->codecpar->height;
             codecContext->max_b_frames = 0;
             codecContext->framerate = ffmpeg.av_guess_frame_rate(null, formatContext->streams[0], null);
-
             codecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesContextNew);
-            ffmpeg.av_hwframe_get_buffer(codecContext->hw_frames_ctx, hwFrame, 0);
             ffmpeg.avcodec_open2(codecContext, codec, null);
-            
             ffmpeg.avcodec_parameters_from_context(codecParameters, codecContext);
         }
     }
@@ -113,7 +100,7 @@ namespace StreamerWinui
         /// <summary>
         /// не реализован
         /// </summary>
-        public void init()
+        public void Init()
         {
             //filtering
             //string arg = $"video_size={ddagrab->codecContext->width}x{ddagrab->codecContext->height}:pix_fmt={(long)ddagrab->codecContext->pix_fmt}:time_base={ddagrab->formatContext->streams[0]->time_base.num}/{ddagrab->formatContext->streams[0]->time_base.den}:pixel_aspect={ddagrab->codecContext->sample_aspect_ratio.num}/{ddagrab->codecContext->sample_aspect_ratio.den}";
@@ -135,13 +122,13 @@ namespace StreamerWinui
 
     public struct Codec
     {
-        public string userFriendlyName { get; }
-        public string name { get; }
+        public string UserFriendlyName { get; }
+        public string Name { get; }
 
-        public Codec(string _userFriendlyName, string _name)
+        public Codec(string userFriendlyName, string name)
         {
-            userFriendlyName = _userFriendlyName;
-            name = _name;
+            UserFriendlyName = userFriendlyName;
+            Name = name;
         }
     }
 }
