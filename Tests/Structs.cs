@@ -39,12 +39,52 @@ namespace StreamerWinui
             timebaseMin.num = formatContext->streams[0]->avg_frame_rate.den;
             timebaseMin.den = formatContext->streams[0]->avg_frame_rate.num;
         }
+        /// <summary>
+        /// read, decode and write AVFrame to this.hwFrame
+        /// </summary>
+        /// <returns>this.hwFrame</returns>
+        public AVFrame* ReadAvFrame()
+        {
+            ffmpeg.av_read_frame(formatContext, packet);
+            ffmpeg.avcodec_send_packet(codecContext, packet);
+            ffmpeg.avcodec_receive_frame(codecContext, hwFrame);
+            
+            return hwFrame;
+        }
 
         public void Free()
         {
             ffmpeg.av_free(inputFormat);
             fixed(AVCodecContext** ptr = &codecContext)
                 ffmpeg.avcodec_free_context(ptr);
+        }
+    }
+    
+    public struct BufferByte
+    {
+        public byte[] Buffer => _buffer;
+        public int Count => _count;
+        public int Size => _buffer.Length;
+        public int SizeRemain => Size - Count;
+        public bool IsEmpty => Count == 0;
+        public bool NotEmpty => Count != 0;
+        public void clear() => _count = 0;
+            
+        private byte[] _buffer;
+        private int _count;
+            
+        public void Append(in byte value)
+        {
+            if (_count >= _buffer.Length)
+                return;
+            _buffer[Count] = value;
+            _count++;
+        }
+            
+        public BufferByte(int size)
+        {
+            _buffer = new byte[size];
+            _count = 0;
         }
     }
 
@@ -54,9 +94,13 @@ namespace StreamerWinui
         public AVCodecParameters* codecParameters;
         public AVCodecContext* codecContext;
         public AVPacket* packet;
+        public int StreamIndex;
 
-        public Encoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContextNew, string hardwareEncoderName)
+        private Streamer _streamer;
+
+        public Encoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContext, string hardwareEncoderName, Streamer streamer)
         {
+            _streamer = streamer;
             codec = null;
             codecParameters = ffmpeg.avcodec_parameters_alloc();
             codecContext = null;
@@ -70,9 +114,21 @@ namespace StreamerWinui
             codecContext->height = formatContext->streams[0]->codecpar->height;
             codecContext->max_b_frames = 0;
             codecContext->framerate = ffmpeg.av_guess_frame_rate(null, formatContext->streams[0], null);
-            codecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesContextNew);
+            codecContext->hw_frames_ctx = ffmpeg.av_buffer_ref(hwFramesContext);
             ffmpeg.avcodec_open2(codecContext, codec, null);
             ffmpeg.avcodec_parameters_from_context(codecParameters, codecContext);
+        }
+
+        public void EncodeAndWriteFrame(AVFrame* hwFrame)
+        {
+            ffmpeg.avcodec_send_frame(codecContext, hwFrame);
+            
+            if (ffmpeg.avcodec_receive_packet(codecContext, packet) == 0)
+            {
+                ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, _streamer.Timebases[StreamIndex]);
+                _streamer.WriteFrame(packet);
+                Console.WriteLine("frame " + codecContext->frame_number + " writed");
+            }
         }
     }
 

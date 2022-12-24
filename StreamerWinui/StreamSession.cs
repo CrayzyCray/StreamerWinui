@@ -1,107 +1,117 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading;
+using System.Drawing;
 using System.IO;
+using System.Linq;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using FFmpeg.AutoGen.Abstractions;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
+using System.Threading;
 
 namespace StreamerWinui
 {
     public class StreamSession
     {
-        public bool StreamIsActive { get { return streamIsActive; } }
-        public Thread thread { get;}
+        public bool StreamIsActive { get { return _streamIsActive; } }
+        private Thread _thread;
 
-        bool streamIsActive = false;
-        unsafe Ddagrab ddagrab;
-        unsafe Encoder encoder;
-        bool stopStreamFlag = false;
-        int response;
-        string format = "";
-        string codecName = "";
-        string framerate = "";
-        string ipToStream = "";
-        string outputUrl = "";
+        private bool _streamIsActive = false;
+        private Ddagrab _ddagrab;
+        private Encoder _encoder;
+        private bool _stopStreamFlag = false;
+        private int _response;
+        private string _codecName = "";
+        private string _ipToStream = "";
+        private string _outputUrl = "";
+        private float _resolutionMultiplyer = 1;
+        private string _ddagrabParameters = "";
 
-        public unsafe void startStream(string formatStream, string codecNameStream = "", string framerateStream = "30", string ipToStreamStream = "localhost", bool showConsoleStream = false)
+        /// <summary>
+        /// if framerate is 0 then default value will be used
+        /// </summary>
+        /// <param name="codecName"></param>
+        /// <param name="framerate"></param>
+        /// <param name="ipToStream"></param>
+        /// <param name="cropResolution"></param>
+        /// <param name="showConsoleStream"></param>
+        public void startStream(string codecName = "hevc_nvenc",
+            int framerate = 0,
+            string ipToStream = "localhost",
+            Size cropResolution = new Size())
         {
-            format = formatStream;
-            codecName = codecNameStream;
-            framerate = framerateStream;
-            ipToStream = ipToStreamStream;
-            thread.Start();
-            streamIsActive = true;
+            List<string> parameters = new List<string>();
+            
+            if (framerate != 0)
+                parameters.Add("framerate=" + framerate);
+            if (cropResolution != Size.Empty)
+                parameters.Add("video_size=" + cropResolution.Width + "x" + cropResolution.Height);
+            
+            _ddagrabParameters = parameters.FirstOrDefault();
+            
+            if (parameters.Count >= 2)
+            {
+                _ddagrabParameters += ":" + parameters[1];
+                if (parameters.Count > 2)
+                    for (int i = 2; i < parameters.Count; i++)
+                        _ddagrabParameters += "," + parameters[i];
+            }
+            
+            _codecName = codecName;
+            _ipToStream = ipToStream;
+            _thread.Start();
+            _streamIsActive = true;
         }
 
-        public unsafe void startProcess()
+        unsafe void startProcess()
         {
-            ddagrab = new Ddagrab();
-            encoder = new Encoder();
-
-            //ddagrab.init();
-            ddagrab.init("video_size=800x600");
-            encoder.initHevcNvenc(ddagrab.formatContext, ddagrab.hwFrame->hw_frames_ctx);
-
-            if (format == "mpegts")
-                outputUrl = $"rist://localhost:10000";
-            else
-                outputUrl = $"D:\\video\\img\\1.{format}";
-
-            //инициализация выходного формата
-            AVOutputFormat* outputFormat = ffmpeg.av_guess_format(format, null, null);
-            debugLogUnmanagedPtr(outputFormat->long_name);
-            AVFormatContext* outputFormatContext = null;
-            response = ffmpeg.avformat_alloc_output_context2(&outputFormatContext, outputFormat, null, outputUrl);
-            var s = ffmpeg.avformat_new_stream(outputFormatContext, encoder.codec);
-            response = ffmpeg.avcodec_parameters_from_context(outputFormatContext->streams[0]->codecpar, encoder.codecContext);
-            outputFormatContext->streams[0]->time_base.num = ddagrab.formatContext->streams[0]->avg_frame_rate.den;
-            outputFormatContext->streams[0]->time_base.den = ddagrab.formatContext->streams[0]->avg_frame_rate.num;
-            response = ffmpeg.avio_open(&outputFormatContext->pb, outputUrl, 2);
-            response = ffmpeg.avformat_write_header(outputFormatContext, null);
-
+            _ddagrab = new Ddagrab(_ddagrabParameters);
+            _encoder = new Encoder(_ddagrab.formatContext, _ddagrab.hwFrame->hw_frames_ctx, _codecName);
+            
+            AVRational[] timebases = new[] { _ddagrab.timebaseMin };
+            Streamer.AddStream(_ipToStream + ":10000", new []{_encoder.codecParameters}, ref timebases);
 
             //main loop
             while (true)
             {
-                if (stopStreamFlag)
+                if (_stopStreamFlag)
                     break;
+                _response = ffmpeg.av_read_frame(_ddagrab.formatContext, _ddagrab.packet);
+                _response = ffmpeg.avcodec_send_packet(_ddagrab.codecContext, _ddagrab.packet);
+                _response = ffmpeg.avcodec_receive_frame(_ddagrab.codecContext, _ddagrab.hwFrame);
+                _response = ffmpeg.avcodec_send_frame(_encoder.codecContext, _ddagrab.hwFrame);
+                _response = ffmpeg.avcodec_receive_packet(_encoder.codecContext, _encoder.packet);
 
-                response = ffmpeg.av_read_frame(ddagrab.formatContext, ddagrab.packet);
-                response = ffmpeg.avcodec_send_packet(ddagrab.codecContext, ddagrab.packet);
-                response = ffmpeg.avcodec_receive_frame(ddagrab.codecContext, ddagrab.hwFrame);
-                response = ffmpeg.avcodec_send_frame(encoder.codecContext, ddagrab.hwFrame);
-                response = ffmpeg.avcodec_receive_packet(encoder.codecContext, encoder.packet);
-
-                ffmpeg.av_packet_rescale_ts(encoder.packet, encoder.codecContext->time_base, outputFormatContext->streams[0]->time_base);
-                if (response == 0) 
-                    response = ffmpeg.av_write_frame(outputFormatContext, encoder.packet);
-                ffmpeg.av_packet_unref(ddagrab.packet);
-                Console.WriteLine($"frame {encoder.codecContext->frame_number} writed");
+                ffmpeg.av_packet_rescale_ts(_encoder.packet,
+                    _encoder.codecContext->time_base,
+                    timebases[_encoder.packet->stream_index]);
+                if (_response == 0)
+                {
+                    _response = Streamer.WriteFrame(_encoder.packet);
+                    //response = ffmpeg.av_write_frame(outputFormatContext, encoder.packet);
+                    ffmpeg.av_packet_unref(_ddagrab.packet);
+                    Console.WriteLine($"frame {_encoder.codecContext->frame_number} writed. pts {_encoder.packet->dts}. dts {_encoder.packet->dts}");
+                }
             }
 
-            response = ffmpeg.av_write_trailer(outputFormatContext);
-            ffmpeg.avio_close(outputFormatContext->pb);
-            ffmpeg.avformat_free_context(outputFormatContext);
+            //response = ffmpeg.av_write_trailer(outputFormatContext);
+            //ffmpeg.avio_close(outputFormatContext->pb);
+            //ffmpeg.avformat_free_context(outputFormatContext);
 
-            stopStreamFlag = false;
-            streamIsActive = false;
+            _stopStreamFlag = false;
+            _streamIsActive = false;
         }
 
         public void stopStream()
         {
-            stopStreamFlag = true;
+            _stopStreamFlag = true;
         }
 
         public StreamSession()
         {
             if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
                 inicialize();
-            thread = new Thread(startProcess);
+            _thread = new Thread(startProcess);
         }
 
         public static Codec[] supportedCodecs =
@@ -112,7 +122,7 @@ namespace StreamerWinui
             new Codec("h264 AMD", "h264_amf"),
         };
 
-        public unsafe static void errStrPrint(int errNum)
+        public static unsafe void errStrPrint(int errNum)
         {
             byte[] str1 = new byte[64];
             fixed (byte* str2 = str1)
@@ -122,12 +132,12 @@ namespace StreamerWinui
             }
         }
 
-        public unsafe static void debugLogUnmanagedPtr(byte* ptr)
+        public static unsafe void debugLogUnmanagedPtr(byte* ptr)
         {
             Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
         }
 
-        public unsafe static string unmanagedPtrToString(byte* ptr)
+        public static unsafe string unmanagedPtrToString(byte* ptr)
         {
             return Marshal.PtrToStringAnsi((IntPtr)ptr) ?? "";
         }

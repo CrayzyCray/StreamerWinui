@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 
 namespace StreamerWinui
@@ -13,14 +12,16 @@ namespace StreamerWinui
                 DynamicallyLoadedBindings.LibrariesPath = @"C:\Users\Cray\Desktop\Programs\ffmpeg";
                 DynamicallyLoadedBindings.Initialize();
             }
+
+            bool recordVideo = false;
+            bool recordAudio = true;
             
-            StreamSession s = new StreamSession();
-            s.startStream(ipToStream:"192.168.0.101", framerate:15, cropResolution:new Size(800, 600), codecName:"hevc_nvenc");
-            //AudioRecorder a = new AudioRecorder();
-            //a.Start1(5);
+            new StreamSession().StartStream(ipToStream:"localhost", framerate:15, cropResolution:new Size(800, 600), codecName:"hevc_nvenc", recordVideo:recordVideo, recordAudio:recordAudio);
             //StreamSession.errStrPrint(-1313558101);
             //Thread.Sleep(15 * 1000);
             //s.stopStream();
+
+            //AudioRecorder.Start3();
         }
     }
 }

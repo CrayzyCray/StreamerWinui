@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -35,7 +36,7 @@ namespace StreamerWinui
             List<string> userFriendlyCodecNames = new List<string>();
             foreach (var item in StreamSession.supportedCodecs)
             {
-                userFriendlyCodecNames.Add(item.userFriendlyName);
+                userFriendlyCodecNames.Add(item.UserFriendlyName);
             }
             codecComboBox.ItemsSource = userFriendlyCodecNames;
             codecComboBox.SelectedIndex = 0;
@@ -60,23 +61,16 @@ namespace StreamerWinui
 
             if (!streamSession.StreamIsActive)
             {
-                string framerate = defaultFramerate;
-                string ipToStream = defaultIpToStream;
+                string ipToStream = "localhost";
 
-                if (framerateTextBlock.Text != "")
-                    try
-                    {
-                        Convert.ToDouble(framerateTextBlock.Text);
-                        framerate = framerateTextBlock.Text;
-                    }
-                    catch { }
-
-                if (ipTextBlock.Text != "")
-                    ipToStream = ipTextBlock.Text;
-
-                string codec = StreamSession.supportedCodecs[codecComboBox.SelectedIndex].name;
-                streamSession.startStream("mpegts");
+                int.TryParse(framerateTextBlock.Text, out int framerate);
                 
+                if (IPAddress.TryParse(ipTextBlock.Text, out IPAddress? ip))
+                    ipToStream = ip.ToString();
+
+                string codecName = StreamSession.supportedCodecs[codecComboBox.SelectedIndex].Name;
+                
+                streamSession.startStream(ipToStream:ipToStream, framerate:framerate, codecName:codecName);
                 startStreamButton.Content = "Stop";
             }
             else

@@ -8,33 +8,37 @@ namespace StreamerWinui
 {
     public class StreamSession
     {
-        public bool StreamIsActive { get { return _streamIsActive; } }
-        public Thread thread { get;}
+        public bool StreamIsActive => _streamIsActive;
+        private Thread _thread;
 
-        private bool _streamIsActive = false;
+        private bool _streamIsActive;
         private Ddagrab _ddagrab;
         private Encoder _encoder;
-        private bool _stopStreamFlag = false;
-        private int _response;
+        private AudioRecorder _audioRecorder;
+        private bool _stopStreamFlag;
         private string _codecName = "";
         private string _ipToStream = "";
-        private string _outputUrl = "";
         private float _resolutionMultiplyer = 1;
         private string _ddagrabParameters = "";
+        private bool _recordVideo;
+        private bool _recordAudio;
+        private Streamer _streamer;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="codecName"></param>
-        /// <param name="framerate"></param>
-        /// if 0 then defaul value is used
+        /// <param name="framerate">if 0, the default value will be used</param>
         /// <param name="ipToStream"></param>
         /// <param name="cropResolution"></param>
-        /// <param name="showConsoleStream"></param>
-        public void startStream(string codecName = "hevc_nvenc",
+        /// <param name="recordVideo"></param>
+        /// <param name="recordAudio"></param>
+        public void StartStream(string codecName = "hevc_nvenc",
             int framerate = 0,
             string ipToStream = "localhost",
-            Size cropResolution = new Size())
+            Size cropResolution = new Size(),
+            bool recordVideo = true,
+            bool recordAudio = true)
         {
             List<string> parameters = new List<string>();
             
@@ -43,7 +47,7 @@ namespace StreamerWinui
             if (cropResolution != Size.Empty)
                 parameters.Add("video_size=" + cropResolution.Width + "x" + cropResolution.Height);
             
-            _ddagrabParameters = parameters.FirstOrDefault();
+            _ddagrabParameters = parameters.First();
             
             if (parameters.Count >= 2)
             {
@@ -55,50 +59,53 @@ namespace StreamerWinui
             
             _codecName = codecName;
             _ipToStream = ipToStream;
-            thread.Start();
+            _recordVideo = recordVideo;
+            _recordAudio = recordAudio;
+            _thread.Start();
             _streamIsActive = true;
         }
 
-        unsafe void startProcess()
+        unsafe void StartProcess()
         {
-            _ddagrab = new Ddagrab(_ddagrabParameters);
-            _encoder = new Encoder(_ddagrab.formatContext, _ddagrab.hwFrame->hw_frames_ctx, _codecName);
+            _streamer = new();
             
-            AVRational[] timebases = new[] { _ddagrab.timebaseMin };
-            Streamer.AddStream(_ipToStream + ":10000", new []{_encoder.codecParameters}, ref timebases);
+            if (_recordVideo)
+            {
+                _ddagrab = new Ddagrab(_ddagrabParameters);
+                _encoder = new Encoder(_ddagrab.formatContext, _ddagrab.hwFrame->hw_frames_ctx, _codecName, _streamer);
+                _encoder.StreamIndex = _streamer.AddAvStream(_encoder.codecParameters, _ddagrab.timebaseMin);
+            }
 
+            if (_recordAudio)
+            {
+                _audioRecorder = new AudioRecorder(_streamer);
+                _audioRecorder.StreamIndex = _streamer.AddAvStream(_audioRecorder.codecParameters, _audioRecorder.timebase);
+            }
+            
+            _streamer.AddClient(_ipToStream + ":10000");
+            
+            if (_recordAudio)
+                _audioRecorder.StartEncoding();
+            
             //main loop
+            if (_recordVideo)
             while (true)
             {
                 if (_stopStreamFlag)
                     break;
-                _response = ffmpeg.av_read_frame(_ddagrab.formatContext, _ddagrab.packet);
-                _response = ffmpeg.avcodec_send_packet(_ddagrab.codecContext, _ddagrab.packet);
-                _response = ffmpeg.avcodec_receive_frame(_ddagrab.codecContext, _ddagrab.hwFrame);
-                _response = ffmpeg.avcodec_send_frame(_encoder.codecContext, _ddagrab.hwFrame);
-                _response = ffmpeg.avcodec_receive_packet(_encoder.codecContext, _encoder.packet);
-
-                ffmpeg.av_packet_rescale_ts(_encoder.packet,
-                    _encoder.codecContext->time_base,
-                    timebases[_encoder.packet->stream_index]);
-                if (_response == 0)
-                {
-                    _response = Streamer.WriteFrame(_encoder.packet);
-                    //response = ffmpeg.av_write_frame(outputFormatContext, encoder.packet);
-                    ffmpeg.av_packet_unref(_ddagrab.packet);
-                    Console.WriteLine($"frame {_encoder.codecContext->frame_number} writed. pts {_encoder.packet->dts}. dts {_encoder.packet->dts}");
-                }
+                
+                _ddagrab.ReadAvFrame();
+                _encoder.EncodeAndWriteFrame(_ddagrab.hwFrame);
             }
-
-            //response = ffmpeg.av_write_trailer(outputFormatContext);
-            //ffmpeg.avio_close(outputFormatContext->pb);
-            //ffmpeg.avformat_free_context(outputFormatContext);
 
             _stopStreamFlag = false;
             _streamIsActive = false;
         }
-
-        public void stopStream()
+        
+        /// <summary>
+        /// send signal to stop stream
+        /// </summary>
+        public void StopStream()
         {
             _stopStreamFlag = true;
         }
@@ -106,51 +113,52 @@ namespace StreamerWinui
         public StreamSession()
         {
             if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
-                inicialize();
-            thread = new Thread(startProcess);
+                Inicialize();
+            _thread = new Thread(StartProcess);
         }
 
-        public static Codec[] supportedCodecs =
+        public static readonly Codec[] SupportedCodecs =
         {
             new Codec("hevc Nvidia", "hevc_nvenc"),
             new Codec("hevc AMD", "hevc_amf"),
             new Codec("h264 Nvidia", "h264_nvenc"),
             new Codec("h264 AMD", "h264_amf"),
+            new Codec("AV1 Nvidia", "av1_nvenc"),
         };
 
-        public static unsafe void errStrPrint(int errNum)
+        public static unsafe void ErrStrPrint(int errNum)
         {
             byte[] str1 = new byte[64];
             fixed (byte* str2 = str1)
             {
                 ffmpeg.av_make_error_string(str2, 64, errNum);
-                debugLogUnmanagedPtr(str2);
+                DebugLogUnmanagedPtr(str2);
             }
         }
 
-        public static unsafe void debugLogUnmanagedPtr(byte* ptr)
+        public static unsafe void DebugLogUnmanagedPtr(byte* ptr)
         {
             Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
         }
 
-        public static unsafe string unmanagedPtrToString(byte* ptr)
+        public static unsafe string UnmanagedPtrToString(byte* ptr)
         {
             return Marshal.PtrToStringAnsi((IntPtr)ptr) ?? "";
         }
 
-        public static void inicialize()
+        public static void Inicialize()
         {
-            setFFMpegBinaresPath(@"C:\Users\Cray\Desktop\Programs\ffmpeg");
+            SetFfmpegBinaresPath(@"C:\Users\Cray\Desktop\Programs\ffmpeg");
             DynamicallyLoadedBindings.Initialize();
         }
 
-        static void setFFMpegBinaresPath()
+        static void SetFfmpegBinaresPath()
         {
             string ffmpegBinaresPath = Path.Combine(Environment.CurrentDirectory, "ffmpeg", "bin");
             DynamicallyLoadedBindings.LibrariesPath = ffmpegBinaresPath;
         }
 
-        static void setFFMpegBinaresPath(string path) 
+        static void SetFfmpegBinaresPath(string path) 
         { 
             DynamicallyLoadedBindings.LibrariesPath = path; 
         }
