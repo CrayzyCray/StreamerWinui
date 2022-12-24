@@ -68,60 +68,72 @@ namespace StreamerWinui
             //int outCount = _wasapiLoopbackCapture.WaveFormat.AverageBytesPerSecond /
             //                _wasapiLoopbackCapture.WaveFormat.Channels / 4; //4 is size of sample in bytes
             //int inCount;
+            
             int _frameSizeInBytes = _codecContext->frame_size * _wasapiLoopbackCapture.WaveFormat.Channels * 4;
-            int bytesWrited = 0;
+            int bytesWrited = 0; //указывает на сэмпл, который не записан
             _buffer = new BufferByte(_frameSizeInBytes);
             _wasapiLoopbackCapture.DataAvailable += (s, a) =>
             {
+                int number = 0;
+                Debug.WriteLine("\nrecord buffer size " + a.BytesRecorded/8);
                 if (_wasapiLoopbackCapture.CaptureState == CaptureState.Stopped)
                     return;
                 
                 if (_buffer.NotEmpty)
                 {
                     bytesWrited = _buffer.SizeRemain;
-                    for (int i = 0; i < _buffer.SizeRemain; i++)
+                    for (int i = 0; i < bytesWrited; i++)
                         _buffer.Append(a.Buffer[i]);
                     fixed (byte* buf = _buffer.Buffer)
                         _ret = ffmpeg.avcodec_fill_audio_frame(_frame, _wasapiLoopbackCapture.WaveFormat.Channels, _codecContext->sample_fmt, buf, _frameSizeInBytes, 1);
-                    Debug.WriteLine("avcodec_fill_audio_frame " + _ret);
+                    _frame->pts = pts;
                     _ret = ffmpeg.avcodec_send_frame(_codecContext, _frame);
-                    Debug.WriteLine("avcodec_send_frame " + _ret);
                     _ret = ffmpeg.avcodec_receive_packet(_codecContext, _packet);
-                    Debug.WriteLine("avcodec_receive_packet " + _ret);
-                    _packet->pts = pts;
-                    _packet->dts = pts;
+                    //_packet->pts = pts;
+                    //_packet->dts = pts;
                     _packet->stream_index = StreamIndex;
                     //ffmpeg.av_packet_rescale_ts(_packet, );
+                    Debug.WriteLine("w: " + _codecContext->frame_number + " pts: " + _packet->pts);
                     _ret = _streamer.WriteFrame(_packet);
-                    Debug.WriteLine("av_write_frame " + _ret);
-                    pts += _frameSizeInBytes;
+                    //Debug.WriteLine("av_write_frame " + _ret);
+                    pts += _codecContext->frame_size;
+                    Debug.WriteLine("writed in buffer mode " + _frameSizeInBytes/8);
+                    _buffer.clear();
                 }
                 
                 
-                for (int i = bytesWrited; i < a.BytesRecorded; i += _frameSizeInBytes)
+                for (int i = bytesWrited; i + _frameSizeInBytes <= a.BytesRecorded; i += _frameSizeInBytes)
                 {
                     fixed (byte* buf = &a.Buffer[i])
                         _ret = ffmpeg.avcodec_fill_audio_frame(_frame, _wasapiLoopbackCapture.WaveFormat.Channels, _codecContext->sample_fmt, buf, _frameSizeInBytes, 1);
-                    Debug.WriteLine("avcodec_fill_audio_frame " + _ret);
+                    //Debug.WriteLine("avcodec_fill_audio_frame " + _ret);
+                    _frame->pts = pts;
                     _ret = ffmpeg.avcodec_send_frame(_codecContext, _frame);
-                    Debug.WriteLine("avcodec_send_frame " + _ret);
+                    //Debug.WriteLine("avcodec_send_frame " + _ret);
                     _ret = ffmpeg.avcodec_receive_packet(_codecContext, _packet);
-                    Debug.WriteLine("avcodec_receive_packet " + _ret);
-                    _packet->pts = pts;
-                    _packet->dts = pts;
+                    //Debug.WriteLine("avcodec_receive_packet " + _ret);
+                    //_packet->pts = pts;
+                    //_packet->dts = pts;
                     _packet->stream_index = StreamIndex;
+                    Debug.WriteLine("w: " + _codecContext->frame_number + " pts: " + _packet->pts);
                     _ret = _streamer.WriteFrame(_packet);
-                    Debug.WriteLine("av_write_frame " + _ret);
-                    pts += a.BytesRecorded;
-                }
+                    //Debug.WriteLine("av_write_frame " + _ret);
+                    pts += _codecContext->frame_size;
 
-                bytesWrited = 0;
+                    number += _frameSizeInBytes/8;
+                }
+                Debug.WriteLine("writed in normal mode " + number);
+
                 
-                _buffer.clear();
                 
-                for (int i = a.BytesRecorded - a.BytesRecorded % _frameSizeInBytes; i < a.BytesRecorded; i++)
+                
+                // for (int i = a.BytesRecorded - a.BytesRecorded % _frameSizeInBytes + bytesWrited; i < a.BytesRecorded; i++)
+                //     _buffer.Append(a.Buffer[i]);
+                for (int i = a.BytesRecorded - (a.BytesRecorded-bytesWrited) % _frameSizeInBytes; i < a.BytesRecorded; i++)
                     _buffer.Append(a.Buffer[i]);
                 
+                bytesWrited = 0;
+                Debug.WriteLine("buffered " + _buffer.Count/8);
                 //inCount = a.BytesRecorded / _wasapiLoopbackCapture.WaveFormat.Channels / 4; //4 is size of sample in bytes
                 //fixed(byte* buf = bufferOut)
                 //    fixed(byte* inBuf = a.Buffer)
@@ -133,6 +145,7 @@ namespace StreamerWinui
             _wasapiLoopbackCapture.RecordingStopped += (s, a) =>
             {
                 _wasapiLoopbackCapture.Dispose();
+                RecordingStopped();
             };
         }
         
@@ -140,6 +153,15 @@ namespace StreamerWinui
         {
             _wasapiLoopbackCapture.StartRecording();
         }
+
+        public void StopEncoding()
+        {
+            _wasapiLoopbackCapture.StopRecording();
+        }
+
+        public delegate void Evnt();
+
+        public event Evnt RecordingStopped;
         
         public void Start1(int timeInSeconds)
         {

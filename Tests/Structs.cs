@@ -1,4 +1,5 @@
-﻿using FFmpeg.AutoGen.Abstractions;
+﻿using System.Diagnostics;
+using FFmpeg.AutoGen.Abstractions;
 
 namespace StreamerWinui
 {
@@ -73,11 +74,14 @@ namespace StreamerWinui
         private byte[] _buffer;
         private int _count;
             
-        public void Append(in byte value)
+        public void Append(byte value)
         {
             if (_count >= _buffer.Length)
+            {
+                Debug.WriteLine("buffer overflowed");
                 return;
-            _buffer[Count] = value;
+            }
+            _buffer[_count] = value;
             _count++;
         }
             

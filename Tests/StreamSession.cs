@@ -80,23 +80,28 @@ namespace StreamerWinui
             {
                 _audioRecorder = new AudioRecorder(_streamer);
                 _audioRecorder.StreamIndex = _streamer.AddAvStream(_audioRecorder.codecParameters, _audioRecorder.timebase);
+                _audioRecorder.RecordingStopped += () => _streamer.CloseAllClients();
             }
             
             _streamer.AddClient(_ipToStream + ":10000");
+            //_streamer.AddClientAsFile(@"D:\video\img\2.opus");
             
             if (_recordAudio)
                 _audioRecorder.StartEncoding();
             
             //main loop
             if (_recordVideo)
-            while (true)
-            {
-                if (_stopStreamFlag)
-                    break;
-                
-                _ddagrab.ReadAvFrame();
-                _encoder.EncodeAndWriteFrame(_ddagrab.hwFrame);
-            }
+                while (true)
+                {
+                    if (_stopStreamFlag)
+                        break;
+                    
+                    _ddagrab.ReadAvFrame();
+                    _encoder.EncodeAndWriteFrame(_ddagrab.hwFrame);
+                }
+            Thread.Sleep(10000 * 1000);
+            if (_recordAudio)
+                _audioRecorder.StopEncoding();
 
             _stopStreamFlag = false;
             _streamIsActive = false;
