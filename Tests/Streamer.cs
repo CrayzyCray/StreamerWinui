@@ -1,15 +1,23 @@
+using System.Net;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace StreamerWinui;
 
-public unsafe class Streamer
+public unsafe class Streamer : IDisposable
 {
-    public List<IntPtr> formatContexts = new();
-    /// <summary>
+    public const int DefaultPort = 10000;
+
     /// List[StreamIndex]
-    /// </summary>
-    public List<AVRational> Timebases => _timebases;
+    public List<IntPtr> FormatContexts => _formatContexts;
     
+    /// List[StreamIndex]
+    public List<string> IpList => _ipList;
+    
+    /// List[StreamIndex]
+    public List<AVRational> Timebases => _timebases;
+
+    private List<IntPtr> _formatContexts = new();
+    private List<string> _ipList = new();
     private List<IntPtr> _codecParametersArray = new();
     private List<AVRational> _timebases = new();
     
@@ -21,7 +29,8 @@ public unsafe class Streamer
         return _codecParametersArray.Count - 1;
     }
     
-    public AVFormatContext* AddClient(string ipWithPort)
+    /// <returns>to do, always true</returns>
+    private bool AddAvClient(string ipWithPort)
     {
         string outputUrl = $"rist://{ipWithPort}";
         AVFormatContext* formatContext = null;
@@ -29,26 +38,37 @@ public unsafe class Streamer
 
         for (int i = 0; i < _timebases.Count; i++)
         {
-            AVStream* stream = ffmpeg.avformat_new_stream(formatContext,
+            ffmpeg.avformat_new_stream(formatContext,
                 ffmpeg.avcodec_find_encoder( ( (AVCodecParameters*)(_codecParametersArray[i]) )->codec_id));
             
             ffmpeg.avcodec_parameters_copy(formatContext->streams[i]->codecpar, (AVCodecParameters*)(_codecParametersArray[i]));
             formatContext->streams[i]->time_base = _timebases[i];
-            //stream->time_base = _timebases[i];
         }
         ffmpeg.avio_open(&formatContext->pb, outputUrl, 2);
         ffmpeg.avformat_write_header(formatContext, null);
-        formatContexts.Add((IntPtr)formatContext);
+        
+        _formatContexts.Add((IntPtr)formatContext);
+        _ipList.Add(ipWithPort);
         
         for (int i = 0; i < _timebases.Count; i++)
             _timebases[i] = formatContext->streams[i]->time_base;
-        
-        return formatContext;
+
+        return true;
     }
 
-    public AVFormatContext* AddClientAsFile(string Path)
+    public bool AddClient(IPAddress ipAddress, int port = DefaultPort)
     {
-        string outputUrl = Path;
+        if (port is < 0 or > 65535)
+            return false;
+        
+        if (_formatContexts.Count == 0)
+            return false;
+        
+        return AddAvClient(ipAddress.ToString() + ":" + port);
+    }
+
+    private AVFormatContext* AddClientAsFile(string Path)
+    {
         AVFormatContext* formatContext = null;
         ffmpeg.avformat_alloc_output_context2(&formatContext, null, null, Path);
 
@@ -61,34 +81,43 @@ public unsafe class Streamer
             formatContext->streams[i]->time_base = _timebases[i];
             //stream->time_base = _timebases[i];
         }
-        ffmpeg.avio_open(&formatContext->pb, outputUrl, 2);
+        ffmpeg.avio_open(&formatContext->pb, Path, 2);
         ffmpeg.avformat_write_header(formatContext, null);
-        formatContexts.Add((IntPtr)formatContext);
+        _formatContexts.Add((IntPtr)formatContext);
         
         for (int i = 0; i < _timebases.Count; i++)
             _timebases[i] = formatContext->streams[i]->time_base;
         
         return formatContext;
     }
-
-    public void CloseAllClients()
+    
+    public void DeleteAllClients()
     {
-        foreach (var fc in formatContexts)
+        foreach (var fc in _formatContexts)
         {
             ffmpeg.av_write_trailer((AVFormatContext*)fc);
-            ffmpeg.avio_close(((AVFormatContext*)fc)->pb);
+            ffmpeg.avio_closep(&(((AVFormatContext*)fc)->pb));
+            ffmpeg.avformat_free_context((AVFormatContext*)fc);
         }
+        
+        _ipList.Clear();
+        _formatContexts.Clear();
     }
 
     public int WriteFrame(AVPacket* packet)
     {
-        foreach (var formatContext in formatContexts)
+        foreach (var formatContext in _formatContexts)
         {
-            int ret = ffmpeg.av_interleaved_write_frame((AVFormatContext*)formatContext, packet);
+            int ret = ffmpeg.av_write_frame((AVFormatContext*)formatContext, packet);
             if (ret < 0)
                 return ret;
         }
 
         return 0;
+    }
+    
+    public void Dispose()
+    {
+        DeleteAllClients();
     }
 }

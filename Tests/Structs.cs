@@ -3,7 +3,7 @@ using FFmpeg.AutoGen.Abstractions;
 
 namespace StreamerWinui
 {
-    public unsafe struct Ddagrab
+    public unsafe struct Ddagrab : IDisposable
     {
         public AVInputFormat* inputFormat;
         public AVFormatContext* formatContext;
@@ -53,11 +53,32 @@ namespace StreamerWinui
             return hwFrame;
         }
 
-        public void Free()
+        public void Dispose()
         {
-            ffmpeg.av_free(inputFormat);
-            fixed(AVCodecContext** ptr = &codecContext)
-                ffmpeg.avcodec_free_context(ptr);
+            if (formatContext != null)
+                ffmpeg.avformat_free_context(formatContext);
+            
+            if (codecParameters != null)
+                fixed(AVCodecParameters** p = &codecParameters)
+                    ffmpeg.avcodec_parameters_free(p);
+            
+            if (packet != null || codecContext != null)
+            {
+                ffmpeg.av_packet_unref(packet);
+                ffmpeg.avcodec_send_packet(codecContext, packet);//flush codecContext
+            }
+            
+            if (codecContext != null)
+                fixed (AVCodecContext** p = &codecContext)
+                    ffmpeg.avcodec_free_context(p);
+            
+            if (packet != null)
+                fixed(AVPacket** p = &packet)
+                    ffmpeg.av_packet_free(p);
+            
+            if (hwFrame != null)
+                fixed(AVFrame** p = &hwFrame)
+                    ffmpeg.av_frame_free(p);
         }
     }
     
@@ -92,17 +113,16 @@ namespace StreamerWinui
         }
     }
 
-    public unsafe struct Encoder
+    public unsafe struct HardwareEncoder : IDisposable
     {
         public AVCodec* codec;
         public AVCodecParameters* codecParameters;
         public AVCodecContext* codecContext;
         public AVPacket* packet;
         public int StreamIndex;
-
         private Streamer _streamer;
 
-        public Encoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContext, string hardwareEncoderName, Streamer streamer)
+        public HardwareEncoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContext, string hardwareEncoderName, Streamer streamer)
         {
             _streamer = streamer;
             codec = null;
@@ -133,6 +153,20 @@ namespace StreamerWinui
                 _streamer.WriteFrame(packet);
                 Console.WriteLine("frame " + codecContext->frame_number + " writed");
             }
+        }
+
+        public void Dispose()
+        {
+            fixed(AVCodecParameters** p = &codecParameters)
+                ffmpeg.avcodec_parameters_free(p);
+            
+            ffmpeg.av_packet_unref(packet);
+            ffmpeg.avcodec_send_packet(codecContext, packet);//flush codecContext
+            fixed (AVCodecContext** p = &codecContext)
+                ffmpeg.avcodec_free_context(p);
+            
+            fixed(AVPacket** p = &packet)
+                ffmpeg.av_packet_free(p);
         }
     }
 
@@ -190,6 +224,15 @@ namespace StreamerWinui
             UserFriendlyName = userFriendlyName;
             Name = name;
         }
+    }
+
+    public enum Encoders
+    {
+        HevcNvenc,
+        HevcAmf,
+        H264Nvenc,
+        H264Amf,
+        Av1Nvenc
     }
 }
 

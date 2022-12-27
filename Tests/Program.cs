@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Net;
 using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 
@@ -8,16 +9,10 @@ namespace StreamerWinui
     {
         public static unsafe void Main()
         {
-            if (DynamicallyLoadedBindings.LibrariesPath == string.Empty)
-            {
-                DynamicallyLoadedBindings.LibrariesPath = @"C:\Users\Cray\Desktop\Programs\ffmpeg";
-                DynamicallyLoadedBindings.Initialize();
-            }
-
-            bool recordVideo = false;
-            bool recordAudio = true;
-            
-            new StreamSession().StartStream(ipToStream:"192.168.0.101", framerate:15, cropResolution:new Size(800, 600), codecName:"hevc_nvenc", recordVideo:recordVideo, recordAudio:recordAudio);
+            string ip = "127.0.0.1";
+            StreamSession streamSession = new();
+            streamSession.StartStream();
+            streamSession.AddClient(IPAddress.Parse(ip));
             //StreamSession.errStrPrint(-1313558101);
             //Thread.Sleep(15 * 1000);
             //s.stopStream();
