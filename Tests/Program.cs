@@ -9,10 +9,16 @@ namespace StreamerWinui
     {
         public static unsafe void Main()
         {
-            string ip = "127.0.0.1";
+            string ip = "192.168.0.115";
+            
             StreamSession streamSession = new();
+            streamSession.VideoRecording = false;
+            streamSession.AudioRecording = true;
             streamSession.StartStream();
             streamSession.AddClient(IPAddress.Parse(ip));
+            //streamSession.AddClientAsFile(@"D:\video\img\2.opus");
+            Thread.Sleep(int.MaxValue);
+            streamSession.StopStream();
             //StreamSession.errStrPrint(-1313558101);
             //Thread.Sleep(15 * 1000);
             //s.stopStream();

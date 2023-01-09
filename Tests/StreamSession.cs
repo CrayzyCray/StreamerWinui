@@ -85,49 +85,22 @@ namespace StreamerWinui
         /// <param name="cropResolution"></param>
         /// <param name="recordVideo"></param>
         /// <param name="recordAudio"></param>
-        public void StartStream()
+        public unsafe void StartStream()
         {
-            if (!_streamIsActive)
-                _task.Start();
-        }
-
-        unsafe void StartProcess()
-        {
-            if (!_audioRecording && !_videoRecording) 
+            if (!_audioRecording) 
                 return;
-
             _streamIsActive = true;
-            
-            _streamer = new();
-            
-            if (_videoRecording)
-            {
-                _ddagrab = new Ddagrab(DdagrabParametersToString());
-                _hardwareEncoder = new HardwareEncoder(_ddagrab.formatContext, _ddagrab.hwFrame->hw_frames_ctx, "hevc_nvenc", _streamer);
-                _hardwareEncoder.StreamIndex = _streamer.AddAvStream(_hardwareEncoder.codecParameters, _ddagrab.timebaseMin);
-            }
 
-            if (_audioRecording)
-            {
-                _audioRecorder = new AudioRecorder(_streamer);
-                _audioRecorder.StreamIndex = _streamer.AddAvStream(_audioRecorder.codecParameters, _audioRecorder.timebase);
-            }
-
-            if (_videoRecording)
-                Task.Run(() =>
-                {
-                    while (true)
-                    {
-                        if (_stopStreamFlag)
-                            break;
-                    
-                        _ddagrab.ReadAvFrame();
-                        _hardwareEncoder.EncodeAndWriteFrame(_ddagrab.hwFrame);
-                    }
-                });
             
-            if (_audioRecording)
-                _audioRecorder.StartEncoding();
+            // if (_videoRecording)
+            // {
+            //     _ddagrab = new Ddagrab(DdagrabParametersToString());
+            //     _hardwareEncoder = new HardwareEncoder(_ddagrab.formatContext, _ddagrab.hwFrame->hw_frames_ctx, "hevc_nvenc", _streamer);
+            //     _hardwareEncoder.StreamIndex = _streamer.AddAvStream(_hardwareEncoder.codecParameters, _ddagrab.timebaseMin);
+            // }
+
+            _audioRecorder = new AudioRecorder(_streamer);
+            _audioRecorder.StartEncoding();
         }
         
         /// <summary>
@@ -136,14 +109,14 @@ namespace StreamerWinui
         public void StopStream()
         {
             _stopStreamFlag = true;
-            _task.Wait();
             _audioRecorder.StopEncoding();
-            _ddagrab.Dispose();
             _audioRecorder.Dispose();
             _streamer.Dispose();
         }
 
         public bool AddClient(IPAddress ipAddress, int port = Streamer.DefaultPort) => _streamer.AddClient(ipAddress, port);
+        public bool AddClientAsFile(string Path) => _streamer.AddClientAsFile(Path);
+        public void WaitTask() => _task.Wait();
 
         private string DdagrabParametersToString()
         {
@@ -154,8 +127,8 @@ namespace StreamerWinui
                 parameters.Add("framerate=" + _framerate);
             if (_cropResolution != Size.Empty)
                 parameters.Add("video_size=" + _cropResolution.Width + "x" + _cropResolution.Height);
-            
-            str = parameters.First();
+
+            str = parameters.FirstOrDefault() ?? string.Empty;
             
             if (parameters.Count >= 2)
             {
@@ -173,7 +146,7 @@ namespace StreamerWinui
             if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
                 Inicialize();
             
-            _task = new(StartProcess);
+            _streamer = new();
         }
 
         public static readonly Codec[] SupportedCodecs =

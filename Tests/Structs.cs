@@ -90,6 +90,7 @@ namespace StreamerWinui
         public int SizeRemain => Size - Count;
         public bool IsEmpty => Count == 0;
         public bool NotEmpty => Count != 0;
+        public bool IsFull => Count == Size;
         public void clear() => _count = 0;
             
         private byte[] _buffer;
@@ -98,10 +99,7 @@ namespace StreamerWinui
         public void Append(byte value)
         {
             if (_count >= _buffer.Length)
-            {
-                Debug.WriteLine("buffer overflowed");
-                return;
-            }
+                throw new Exception("buffer overflowed");
             _buffer[_count] = value;
             _count++;
         }
@@ -121,6 +119,7 @@ namespace StreamerWinui
         public AVPacket* packet;
         public int StreamIndex;
         private Streamer _streamer;
+        private AVRational _timebase;
 
         public HardwareEncoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContext, string hardwareEncoderName, Streamer streamer)
         {
@@ -132,7 +131,8 @@ namespace StreamerWinui
             
             codec = ffmpeg.avcodec_find_encoder_by_name(hardwareEncoderName);
             codecContext = ffmpeg.avcodec_alloc_context3(codec);
-            codecContext->time_base = formatContext->streams[0]->time_base;
+            _timebase = formatContext->streams[0]->time_base;
+            codecContext->time_base = _timebase;
             codecContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_D3D11;
             codecContext->width = formatContext->streams[0]->codecpar->width;
             codecContext->height = formatContext->streams[0]->codecpar->height;
@@ -149,8 +149,8 @@ namespace StreamerWinui
             
             if (ffmpeg.avcodec_receive_packet(codecContext, packet) == 0)
             {
-                ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, _streamer.Timebases[StreamIndex]);
-                _streamer.WriteFrame(packet);
+                ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, _streamer.StreamParametersList[StreamIndex].Timebase);
+                _streamer.WriteFrame(packet, _timebase);
                 Console.WriteLine("frame " + codecContext->frame_number + " writed");
             }
         }
@@ -166,6 +166,77 @@ namespace StreamerWinui
                 ffmpeg.avcodec_free_context(p);
             
             fixed(AVPacket** p = &packet)
+                ffmpeg.av_packet_free(p);
+        }
+    }
+    public unsafe class AudioEncoder : IDisposable
+    {
+        public int FrameSizeInSamples => _frameSizeInSamples;
+        public int StreamIndex => _streamIndex;
+        public int Channels => _channels;
+        public AVSampleFormat SampleFormat => _sampleFormat;
+        
+        private AVCodecContext* _codecContext;
+        private AVPacket* _packet;
+        private Streamer _streamer;
+        private long _pts;
+        private AVRational _timebase;
+        private AVCodecParameters* _codecParameters;
+        private int _frameSizeInSamples;
+        private int _streamIndex;
+        private int _channels;
+        private AVSampleFormat _sampleFormat;
+        private int _sampleRate;
+
+        public AudioEncoder(Streamer streamer, string encoderName = "libopus")
+        {
+            _channels = 2;
+            _sampleRate = 48000;
+            _sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_FLT;
+            
+            AVCodec* codec = ffmpeg.avcodec_find_encoder_by_name(encoderName);
+
+            _codecContext = ffmpeg.avcodec_alloc_context3(codec);
+            _codecContext->sample_rate = _sampleRate;
+            _codecContext->sample_fmt = _sampleFormat;
+            
+            ffmpeg.av_channel_layout_default(&_codecContext->ch_layout, _channels);
+            ffmpeg.avcodec_open2(_codecContext, codec, null);
+            
+            _packet = ffmpeg.av_packet_alloc();
+            _timebase = new AVRational() { num = 1, den = _sampleRate };
+            _frameSizeInSamples = _codecContext->frame_size;
+            
+            _codecParameters = ffmpeg.avcodec_parameters_alloc();
+            ffmpeg.avcodec_parameters_from_context(_codecParameters, _codecContext);
+            
+            _streamer = streamer;
+            _streamer.AddAvStream(_codecParameters, _timebase);
+        }
+
+        public void EncodeAndWriteFrame(AVFrame* AvFrame)
+        {
+            AvFrame->pts = _pts;
+            ffmpeg.avcodec_send_frame(_codecContext, AvFrame);
+            
+            if (ffmpeg.avcodec_receive_packet(_codecContext, _packet) == 0)
+            {
+                //ffmpeg.av_packet_rescale_ts(_packet, _codecContext->time_base, _timebase);
+                _streamer.WriteFrame(_packet, _timebase);
+                ffmpeg.av_packet_unref(_packet);
+            }
+
+            _pts += _codecContext->frame_size;
+        }
+
+        public void Dispose()
+        {
+            ffmpeg.av_packet_unref(_packet);
+            ffmpeg.avcodec_send_packet(_codecContext, _packet);//flush codecContext
+            fixed (AVCodecContext** p = &_codecContext)
+                ffmpeg.avcodec_free_context(p);
+            
+            fixed(AVPacket** p = &_packet)
                 ffmpeg.av_packet_free(p);
         }
     }
@@ -232,7 +303,8 @@ namespace StreamerWinui
         HevcAmf,
         H264Nvenc,
         H264Amf,
-        Av1Nvenc
+        Av1Nvenc,
+        LibOpus
     }
 }
 
