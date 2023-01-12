@@ -3,6 +3,53 @@ using FFmpeg.AutoGen.Abstractions;
 
 namespace StreamerWinui
 {
+    public class AudioBufferSlicer
+    {
+        public byte[] Buffer => _buffer.InternalArray;
+        public bool BufferIsFull => _buffer.IsFull;
+        public int BufferedCount => _bufferSecond.Count;
+        public List<int> SliceIndexes => _sliceIndexes;
+        
+        private Buffer<byte> _buffer;
+        private Buffer<byte> _bufferSecond;
+        private int _sliceSizeInBytes;
+        public List<int> _sliceIndexes = new();
+        
+        public AudioBufferSlicer(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
+        {
+            _buffer = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
+            _bufferSecond = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
+            _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
+        }
+        /// buffers samples that do not fit the SliceSize
+        /// <returns>Array of indexes in Buffer</returns>
+        public void SendBuffer(in byte[] Buffer, int BufferLength)
+        {
+            int bytesWritedInBufferMode = 0;
+            
+            if (_buffer.IsFull)
+                _buffer.clear();
+            
+            //swap buffers
+            (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
+            
+            if (_buffer.NotEmpty)
+            {
+                bytesWritedInBufferMode = _buffer.SizeRemain;
+                for (int i = 0; i < bytesWritedInBufferMode; i++)
+                    _buffer.Append(Buffer[i]); //add fill to end method
+            }
+
+            _sliceIndexes = new((BufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes);
+            
+            for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= BufferLength; i += _sliceSizeInBytes)
+                _sliceIndexes.Add(i);
+            
+            for (int i = BufferLength - (BufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes; i < BufferLength; i++)
+                _bufferSecond.Append(Buffer[i]);
+        }
+    }
+    
     public unsafe struct Ddagrab : IDisposable
     {
         public AVInputFormat* inputFormat;
@@ -40,6 +87,7 @@ namespace StreamerWinui
             timebaseMin.num = formatContext->streams[0]->avg_frame_rate.den;
             timebaseMin.den = formatContext->streams[0]->avg_frame_rate.num;
         }
+        
         /// <summary>
         /// read, decode and write AVFrame to this.hwFrame
         /// </summary>
@@ -82,9 +130,9 @@ namespace StreamerWinui
         }
     }
     
-    public struct BufferByte
+    public class Buffer<T>
     {
-        public byte[] Buffer => _buffer;
+        public T[] InternalArray => _buffer;
         public int Count => _count;
         public int Size => _buffer.Length;
         public int SizeRemain => Size - Count;
@@ -92,23 +140,37 @@ namespace StreamerWinui
         public bool NotEmpty => Count != 0;
         public bool IsFull => Count == Size;
         public void clear() => _count = 0;
+
+        public ref T this[int Index] => ref _buffer[Index];
             
-        private byte[] _buffer;
-        private int _count;
+        private T[] _buffer;
+        private int _count = 0;
             
-        public void Append(byte value)
+        public void Append(in T value)
         {
             if (_count >= _buffer.Length)
                 throw new Exception("buffer overflowed");
             _buffer[_count] = value;
             _count++;
         }
-            
-        public BufferByte(int size)
+        
+        public void FillToEnd(T[] Buffer, int BufferLength)
         {
-            _buffer = new byte[size];
-            _count = 0;
+            if (BufferLength < SizeRemain)
+                throw new ArgumentException("BufferLength less than remain size");
+            Array.Copy(Buffer, 0, _buffer, _count, SizeRemain);
+            _count = _buffer.Length;
         }
+
+        public void Fill(T[] Buffer, int BufferLength, int Index, int Length)
+        {
+            if (Index + Length > BufferLength || Length > SizeRemain)
+                throw new ArgumentOutOfRangeException();
+            Array.Copy(Buffer, Index, _buffer, _count, Length);
+            _count += Length;
+        }
+        
+        public Buffer(int size) => _buffer = new T[size];
     }
 
     public unsafe struct HardwareEncoder : IDisposable

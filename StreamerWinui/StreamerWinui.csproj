@@ -1,29 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows10.0.19041</TargetFramework>
+    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>StreamerWinui</RootNamespace>
+    <RootNamespace>App1</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x64;arm64</Platforms>
-    <RuntimeIdentifiers>win10-x64;win10-arm64</RuntimeIdentifiers>
+    <Platforms>x86;x64;arm64</Platforms>
+    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
     <PublishProfile>win10-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-    <PackageCertificateThumbprint>2B873DF717CEA7E8E441373D031221F80F57A85A</PackageCertificateThumbprint>
-    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
-    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
-    <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Always</AppxBundle>
-    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <StartupObject></StartupObject>
-    <AppxPackageDir>\\Desktop-vodgq2v\c\Users\yaeld\Desktop\</AppxPackageDir>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="AudioWindow.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -38,9 +29,11 @@
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="5.1.1.1" />
     <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="5.1.1.1" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.221116.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.220902.1-preview1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.755" />
     <Manifest Include="$(ApplicationManifest)" />
+    <None Include="Properties\PublishProfiles\win10-x64.pubxml.user" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.1.0" />
   </ItemGroup>
 
   <!-- 
@@ -50,11 +43,6 @@
   -->
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <ProjectCapability Include="Msix" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="ffmpeg.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <!-- 

@@ -34,7 +34,7 @@ namespace StreamerWinui
 
             //заполнение codecComboBox
             List<string> userFriendlyCodecNames = new List<string>();
-            foreach (var item in StreamSession.supportedCodecs)
+            foreach (var item in StreamSession.SupportedCodecs)
             {
                 userFriendlyCodecNames.Add(item.UserFriendlyName);
             }
@@ -68,14 +68,14 @@ namespace StreamerWinui
                 if (IPAddress.TryParse(ipTextBlock.Text, out IPAddress? ip))
                     ipToStream = ip.ToString();
 
-                string codecName = StreamSession.supportedCodecs[codecComboBox.SelectedIndex].Name;
+                string codecName = StreamSession.SupportedCodecs[codecComboBox.SelectedIndex].Name;
                 
-                streamSession.startStream(ipToStream:ipToStream, framerate:framerate, codecName:codecName);
+                //streamSession.StartStream(IpToStream:ipToStream, framerate:framerate, codecName:codecName);
                 startStreamButton.Content = "Stop";
             }
             else
             {
-                streamSession.stopStream();
+                streamSession.StopStream();
                 startStreamButton.Content = "Start";
             }
                 

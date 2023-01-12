@@ -1,9 +1,15 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Net;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using FFmpeg.AutoGen.Abstractions;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using NAudio.CoreAudioApi;
 
 namespace StreamerWinui
 {
@@ -56,6 +62,12 @@ namespace StreamerWinui
             get => _cropResolution;
             set => _cropResolution = value;
         }
+
+        public MMDevice MMDevice
+        {
+            get => _mmDevice;
+            set => _mmDevice = value;
+        }
         
         private bool _videoRecording;
         private bool _audioRecording;
@@ -64,42 +76,23 @@ namespace StreamerWinui
         private Encoders _encoder;
         private double _resolutionMultiplyer = 1;
         private bool _streamIsActive;
-        
-        
         private Task _task;
-
         private Ddagrab _ddagrab;
         private HardwareEncoder _hardwareEncoder;
         private AudioRecorder _audioRecorder;
         private Streamer _streamer;
-        
-        
+        private MMDevice _mmDevice;
         private bool _stopStreamFlag;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="codecName"></param>
         /// <param name="framerate">if 0, the default value will be used</param>
-        /// <param name="ipToStream"></param>
-        /// <param name="cropResolution"></param>
-        /// <param name="recordVideo"></param>
-        /// <param name="recordAudio"></param>
-        public unsafe void StartStream()
+        public void StartStream()
         {
             if (!_audioRecording) 
                 return;
             _streamIsActive = true;
-
             
-            // if (_videoRecording)
-            // {
-            //     _ddagrab = new Ddagrab(DdagrabParametersToString());
-            //     _hardwareEncoder = new HardwareEncoder(_ddagrab.formatContext, _ddagrab.hwFrame->hw_frames_ctx, "hevc_nvenc", _streamer);
-            //     _hardwareEncoder.StreamIndex = _streamer.AddAvStream(_hardwareEncoder.codecParameters, _ddagrab.timebaseMin);
-            // }
-
             _audioRecorder = new AudioRecorder(_streamer);
+            _audioRecorder.MMDevice = _mmDevice;
             _audioRecorder.StartEncoding();
         }
         

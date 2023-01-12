@@ -11,33 +11,25 @@ namespace StreamerWinui
 {
     public unsafe class AudioRecorder : IDisposable
     {
-        public void Dispose() => StopEncoding();
         public const int SampleSizeInBytes = 4;
         public bool PrintDebugInfo;
         public int Channels => _wasapiCapture.WaveFormat.Channels;
-
-        public MMDevice MMDevice
-        {
-            get => _mmDevice;
-            set => _mmDevice = value;
-        }
         
         private WasapiCapture _wasapiCapture;
+        private int _ret;
         private Streamer _streamer;
         private AudioEncoder _audioEncoder;
         private AudioBufferSlicer _audioBufferSlicer;
         private AVFrame* _avFrame;
-        private MMDevice _mmDevice;
 
+        public void Dispose() => StopEncoding();
 
-        public AudioRecorder(Streamer Streamer)
+        public AudioRecorder(Streamer Streamer, MMDevice MMDevice)
         {
-            if (_mmDevice == null)
-                _wasapiCapture = new WasapiLoopbackCapture();
-            else if (_mmDevice.DataFlow == DataFlow.Render)
-                _wasapiCapture = new WasapiLoopbackCapture(_mmDevice);
-            else if (_mmDevice.DataFlow == DataFlow.Capture)
-                _wasapiCapture = new WasapiCapture(_mmDevice);
+            if (MMDevice.DataFlow == DataFlow.Render)
+                _wasapiCapture = new WasapiLoopbackCapture(MMDevice);
+            else if (MMDevice.DataFlow == DataFlow.Capture)
+                _wasapiCapture = new WasapiCapture(MMDevice);
             else
                 throw new Exception("Wrong DataFlow");
 
@@ -61,7 +53,7 @@ namespace StreamerWinui
                 if (_audioBufferSlicer.BufferIsFull)
                 {
                     fixed (byte* buf = _audioBufferSlicer.Buffer)
-                        ffmpeg.avcodec_fill_audio_frame(_avFrame, _audioEncoder.Channels, _audioEncoder.SampleFormat, buf, _frameSizeInBytes, 1);
+                        _ret = ffmpeg.avcodec_fill_audio_frame(_avFrame, _audioEncoder.Channels, _audioEncoder.SampleFormat, buf, _frameSizeInBytes, 1);
                     _audioEncoder.EncodeAndWriteFrame(_avFrame);
                     Debug.WriteLine("frame " + framesNumber++ + " writed (buffer)");
                 }
