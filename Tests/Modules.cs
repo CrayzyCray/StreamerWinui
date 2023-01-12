@@ -3,53 +3,6 @@ using FFmpeg.AutoGen.Abstractions;
 
 namespace StreamerWinui
 {
-    public class AudioBufferSlicer
-    {
-        public byte[] Buffer => _buffer.InternalArray;
-        public bool BufferIsFull => _buffer.IsFull;
-        public int BufferedCount => _bufferSecond.Count;
-        public List<int> SliceIndexes => _sliceIndexes;
-        
-        private Buffer<byte> _buffer;
-        private Buffer<byte> _bufferSecond;
-        private int _sliceSizeInBytes;
-        public List<int> _sliceIndexes = new();
-        
-        public AudioBufferSlicer(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
-        {
-            _buffer = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
-            _bufferSecond = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
-            _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
-        }
-        /// buffers samples that do not fit the SliceSize
-        /// <returns>Array of indexes in Buffer</returns>
-        public void SendBuffer(in byte[] Buffer, int BufferLength)
-        {
-            int bytesWritedInBufferMode = 0;
-            
-            if (_buffer.IsFull)
-                _buffer.clear();
-            
-            //swap buffers
-            (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
-            
-            if (_buffer.NotEmpty)
-            {
-                bytesWritedInBufferMode = _buffer.SizeRemain;
-                for (int i = 0; i < bytesWritedInBufferMode; i++)
-                    _buffer.Append(Buffer[i]); //add fill to end method
-            }
-
-            _sliceIndexes = new((BufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes);
-            
-            for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= BufferLength; i += _sliceSizeInBytes)
-                _sliceIndexes.Add(i);
-            
-            for (int i = BufferLength - (BufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes; i < BufferLength; i++)
-                _bufferSecond.Append(Buffer[i]);
-        }
-    }
-    
     public unsafe struct Ddagrab : IDisposable
     {
         public AVInputFormat* inputFormat;
@@ -127,6 +80,53 @@ namespace StreamerWinui
             if (hwFrame != null)
                 fixed(AVFrame** p = &hwFrame)
                     ffmpeg.av_frame_free(p);
+        }
+    }
+    
+    public class AudioBufferSlicer
+    {
+        public byte[] Buffer => _buffer.InternalArray;
+        public bool BufferIsFull => _buffer.IsFull;
+        public int BufferedCount => _bufferSecond.Count;
+        public List<int> SliceIndexes => _sliceIndexes;
+        
+        private Buffer<byte> _buffer;
+        private Buffer<byte> _bufferSecond;
+        private int _sliceSizeInBytes;
+        private List<int> _sliceIndexes = new();
+        
+        public AudioBufferSlicer(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
+        {
+            _buffer = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
+            _bufferSecond = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
+            _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
+        }
+        
+        /// buffers samples that do not fit the SliceSize
+        /// <returns>Array of indexes in Buffer</returns>
+        public void SendBuffer(in byte[] Buffer, int BufferLength)
+        {
+            int bytesWritedInBufferMode = 0;
+            
+            if (_buffer.IsFull)
+                _buffer.clear();
+            
+            //swap buffers
+            (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
+            
+            if (_buffer.NotEmpty)
+            {
+                bytesWritedInBufferMode = _buffer.SizeRemain;
+                _buffer.FillToEnd(Buffer, BufferLength);
+            }
+
+            _sliceIndexes = new((BufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes);
+            
+            for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= BufferLength; i += _sliceSizeInBytes)
+                _sliceIndexes.Add(i);
+            
+            int index = BufferLength - (BufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes;
+            _bufferSecond.Fill(Buffer, BufferLength, index, BufferLength - index);
         }
     }
     

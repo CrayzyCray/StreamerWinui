@@ -51,51 +51,7 @@ namespace StreamerWinui
             Console.WriteLine(sw.ElapsedMilliseconds);
         }
     }
-    public class AudioBufferSlicer2
-    {
-        public byte[] Buffer => _buffer.InternalArray;
-        public bool BufferIsFull => _buffer.IsFull;
-        public int BufferedCount => _bufferSecond.Count;
-        public List<int> SliceIndexes => _sliceIndexes;
-        
-        private Buffer<byte> _buffer;
-        private Buffer<byte> _bufferSecond;
-        private int _sliceSizeInBytes;
-        public List<int> _sliceIndexes = new();
-        
-        public AudioBufferSlicer2(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
-        {
-            _buffer = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
-            _bufferSecond = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
-            _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
-        }
-        /// buffers samples that do not fit the SliceSize
-        /// <returns>Array of indexes in Buffer</returns>
-        public void SendBuffer(in byte[] Buffer, int BufferLength)
-        {
-            int bytesWritedInBufferMode = 0;
-            
-            if (_buffer.IsFull)
-                _buffer.clear();
-            
-            //swap buffers
-            (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
-            
-            if (_buffer.NotEmpty)
-            {
-                bytesWritedInBufferMode = _buffer.SizeRemain;
-                _buffer.FillToEnd(Buffer, BufferLength);
-            }
-
-            _sliceIndexes = new((BufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes);
-            
-            for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= BufferLength; i += _sliceSizeInBytes)
-                _sliceIndexes.Add(i);
-            
-            int index = BufferLength - (BufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes;
-            _bufferSecond.Fill(Buffer, BufferLength, index, BufferLength - index);
-        }
-    }
+    
 
     public class TheEasiestBenchmark
     {
