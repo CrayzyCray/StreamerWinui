@@ -18,25 +18,19 @@ namespace StreamerWinui
         public const Encoders DefaultVideoEncoder = Encoders.HevcNvenc;
         
         public bool StreamIsActive => _streamIsActive;
-        
+        /// <summary>
+        /// if 0 then used defaul value
+        /// </summary>
         public int Framerate
         {
             get => _framerate;
-            set
-            {
-                if (value >= 0)
-                    _framerate = value;
-            }
+            set => _framerate = (value >= 0) ? value : _framerate;
         }
         
         public double ResolutionMultiplyer
         {
             get => _resolutionMultiplyer;
-            set
-            {
-                if (value is > 0 and <= 1)
-                    _resolutionMultiplyer = value;
-            }
+            set => _resolutionMultiplyer = (value is > 0 and <= 1) ? value : _resolutionMultiplyer;
         }
 
         public Encoders Encoder
@@ -63,36 +57,29 @@ namespace StreamerWinui
             set => _cropResolution = value;
         }
 
-        public MMDevice MMDevice
-        {
-            get => _mmDevice;
-            set => _mmDevice = value;
-        }
+        public MMDevice MMDevice { get; set; }
         
         private bool _videoRecording;
         private bool _audioRecording;
+        private bool _streamIsActive;
         private int _framerate = 0;
         private Size _cropResolution;
         private Encoders _encoder;
         private double _resolutionMultiplyer = 1;
-        private bool _streamIsActive;
         private Task _task;
         private Ddagrab _ddagrab;
         private HardwareEncoder _hardwareEncoder;
         private AudioRecorder _audioRecorder;
         private Streamer _streamer;
-        private MMDevice _mmDevice;
-        private bool _stopStreamFlag;
 
-        /// <param name="framerate">if 0, the default value will be used</param>
         public void StartStream()
         {
             if (!_audioRecording) 
                 return;
             _streamIsActive = true;
-            
-            _audioRecorder = new AudioRecorder(_streamer);
-            _audioRecorder.MMDevice = _mmDevice;
+
+            _audioRecorder = new AudioRecorder(_streamer, Encoders.LibOpus);
+            _audioRecorder.MMDevice = MMDevice;
             _audioRecorder.StartEncoding();
         }
         
@@ -101,8 +88,6 @@ namespace StreamerWinui
         /// </summary>
         public void StopStream()
         {
-            _stopStreamFlag = true;
-            _audioRecorder.StopEncoding();
             _audioRecorder.Dispose();
             _streamer.Dispose();
         }
@@ -113,7 +98,6 @@ namespace StreamerWinui
 
         private string DdagrabParametersToString()
         {
-            string str;
             List<string> parameters = new List<string>();
             
             if (_framerate != 0)
@@ -121,17 +105,20 @@ namespace StreamerWinui
             if (_cropResolution != Size.Empty)
                 parameters.Add("video_size=" + _cropResolution.Width + "x" + _cropResolution.Height);
 
-            str = parameters.FirstOrDefault() ?? string.Empty;
-            
-            if (parameters.Count >= 2)
+            if (parameters.Count > 0)
             {
-                str += ":" + parameters[1];
-                if (parameters.Count > 2)
-                    for (int i = 2; i < parameters.Count; i++)
-                        str += "," + parameters[i];
-            }
+                string str = parameters.First();
 
-            return str;
+                if (parameters.Count >= 2)
+                {
+                    str += ":" + parameters[1];
+                    if (parameters.Count > 2)
+                        for (int i = 2; i < parameters.Count; i++)
+                            str += "," + parameters[i];
+                }
+                return str;
+            }
+            return string.Empty;
         }
 
         public StreamSession()
@@ -139,53 +126,46 @@ namespace StreamerWinui
             if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
                 Inicialize();
             
-            _streamer = new();
+            _streamer = new Streamer();
         }
 
         public static readonly Codec[] SupportedCodecs =
         {
-            new Codec("hevc Nvidia", "hevc_nvenc"),
-            new Codec("hevc AMD", "hevc_amf"),
-            new Codec("h264 Nvidia", "h264_nvenc"),
-            new Codec("h264 AMD", "h264_amf"),
-            new Codec("AV1 Nvidia", "av1_nvenc"),
+            new Codec("hevc Nvidia", "hevc_nvenc", Encoders.HevcNvenc, MediaTypes.Video),
+            new Codec("hevc AMD", "hevc_amf", Encoders.HevcAmf, MediaTypes.Video),
+            new Codec("h264 Nvidia", "h264_nvenc", Encoders.H264Nvenc, MediaTypes.Video),
+            new Codec("h264 AMD", "h264_amf", Encoders.H264Amf, MediaTypes.Video),
+            new Codec("AV1 Nvidia", "av1_nvenc", Encoders.Av1Nvenc, MediaTypes.Video),
+            new Codec("Opus", "libopus", Encoders.LibOpus, MediaTypes.Audio)
         };
 
         public static unsafe void ErrStrPrint(int errNum)
         {
-            byte[] str1 = new byte[64];
+            int maxErrorStringSize = 64;
+            byte[] str1 = new byte[maxErrorStringSize];
             fixed (byte* str2 = str1)
             {
                 ffmpeg.av_make_error_string(str2, 64, errNum);
                 DebugLogUnmanagedPtr(str2);
             }
         }
-
-        public static unsafe void DebugLogUnmanagedPtr(byte* ptr)
-        {
-            Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
-        }
-
-        public static unsafe string UnmanagedPtrToString(byte* ptr)
-        {
-            return Marshal.PtrToStringAnsi((IntPtr)ptr) ?? "";
-        }
-
+        
         public static void Inicialize()
         {
             SetFfmpegBinaresPath(@"C:\Users\Cray\Desktop\Programs\ffmpeg");
             DynamicallyLoadedBindings.Initialize();
         }
 
-        static void SetFfmpegBinaresPath()
-        {
-            string ffmpegBinaresPath = Path.Combine(Environment.CurrentDirectory, "ffmpeg", "bin");
-            DynamicallyLoadedBindings.LibrariesPath = ffmpegBinaresPath;
-        }
+        public static unsafe void DebugLogUnmanagedPtr(byte* ptr) =>
+            Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
 
-        static void SetFfmpegBinaresPath(string path) 
-        { 
+        public static unsafe string UnmanagedPtrToString(byte* ptr) =>
+            Marshal.PtrToStringAnsi((IntPtr)ptr) ?? String.Empty;
+
+        static void SetFfmpegBinaresPath()=>
+            DynamicallyLoadedBindings.LibrariesPath = Path.Combine(Environment.CurrentDirectory, "ffmpeg", "bin");
+
+        static void SetFfmpegBinaresPath(string path) =>
             DynamicallyLoadedBindings.LibrariesPath = path; 
-        }
     }
 }

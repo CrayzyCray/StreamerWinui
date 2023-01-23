@@ -1,13 +1,9 @@
-﻿using System.Diagnostics;
+﻿using System.Net;
 using System.Drawing;
-using System.Net;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
-using BenchmarkDotNet;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using Perfolizer.Horology;
 
 namespace StreamerWinui
 {
@@ -15,13 +11,10 @@ namespace StreamerWinui
     {
         public static void Main()
         {
-            Stream();
-
-            //Marshal.AllocHGlobal(IntPtr.Zero);
-            //Marshal.FreeHGlobal(IntPtr.Zero);
+            Start();
         }
 
-        public static void Stream()
+        public static void Start()
         {
             string ip = "192.168.0.115";
             
@@ -51,30 +44,7 @@ namespace StreamerWinui
             Console.WriteLine(sw.ElapsedMilliseconds);
         }
     }
-    
-
-    public class TheEasiestBenchmark
-    {
-        public byte[] array1 = new byte[7680];
-        public byte[] array2 = new byte[7680 * 2];
-        
-        [Benchmark(Description = "Array.Copy(){}")]
-        public void met1()
-        {
-            Array.Copy(array2, array1, 7680);
-        }
-        
-        [Benchmark(Description = "For()")]
-        public void met2()
-        {
-            for (int i = 0; i < array1.Length; i++)
-            {
-                array1[i] = array2[i];
-            }
-        }
-    }
 }
-//    Thread.Sleep(400 * 1000); streamSession.stopStream();
 
 //-11 Resource temporarily unavailable
 //-22 Invalid argument

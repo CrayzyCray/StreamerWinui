@@ -1,11 +1,10 @@
 ﻿using System;
-using NAudio.CoreAudioApi;
-using NAudio.Wave;
-using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using NAudio.Wave.SampleProviders;
+using FFmpeg.AutoGen.Abstractions;
+using NAudio.Wave;
+using NAudio.CoreAudioApi;
 
 namespace StreamerWinui
 {
@@ -13,9 +12,8 @@ namespace StreamerWinui
     {
         public void Dispose() => StopEncoding();
         public const int SampleSizeInBytes = 4;
-        public bool PrintDebugInfo;
+        public bool PrintDebugInfo { get; set; }
         public int Channels => _wasapiCapture.WaveFormat.Channels;
-
         public MMDevice MMDevice
         {
             get => _mmDevice;
@@ -30,7 +28,7 @@ namespace StreamerWinui
         private MMDevice _mmDevice;
 
 
-        public AudioRecorder(Streamer Streamer)
+        public AudioRecorder(Streamer Streamer, Encoders encoder)
         {
             if (_mmDevice == null)
                 _wasapiCapture = new WasapiLoopbackCapture();
@@ -41,7 +39,7 @@ namespace StreamerWinui
             else
                 throw new Exception("Wrong DataFlow");
 
-            _audioEncoder = new(Streamer);
+            _audioEncoder = new(Streamer, encoder);
             _audioBufferSlicer = new(_audioEncoder.FrameSizeInSamples, 4, _audioEncoder.Channels);
             _avFrame = ffmpeg.av_frame_alloc();
             _avFrame->nb_samples = _audioEncoder.FrameSizeInSamples;
