@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Tests\Tests.csproj" />
+      <ProjectReference Include="..\StreamerLib\StreamerLib.csproj" />
     </ItemGroup>
 
     <ItemGroup>
