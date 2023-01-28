@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NAudio.CoreAudioApi;
 
-namespace StreamerWinui
+namespace StreamerLib
 {
     public class StreamSession
     {
@@ -72,15 +72,20 @@ namespace StreamerWinui
         private AudioRecorder _audioRecorder;
         private Streamer _streamer;
 
+        private MasterChannel _masterChannel;
+
         public void StartStream()
         {
             if (!_audioRecording) 
                 return;
             _streamIsActive = true;
 
-            _audioRecorder = new AudioRecorder(_streamer, Encoders.LibOpus);
-            _audioRecorder.MMDevice = MMDevice;
-            _audioRecorder.StartEncoding();
+            //_audioRecorder = new AudioRecorder(_streamer, Encoders.LibOpus);
+            //_audioRecorder.MMDevice = MMDevice;
+            //_audioRecorder.StartEncoding();
+            _masterChannel = new MasterChannel(_streamer, Encoders.LibOpus);
+            _masterChannel.AddChannel(MMDevice);
+            _masterChannel.StartStreaming();
         }
         
         /// <summary>
@@ -88,7 +93,7 @@ namespace StreamerWinui
         /// </summary>
         public void StopStream()
         {
-            _audioRecorder.Dispose();
+            _masterChannel.Dispose();
             _streamer.Dispose();
         }
 

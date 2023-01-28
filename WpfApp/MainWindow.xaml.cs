@@ -1,45 +1,50 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using NAudio.Wasapi;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using NAudio.CoreAudioApi;
+using StreamerLib;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
-namespace StreamerLib
+namespace WpfApp
 {
     /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
+    /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public sealed partial class AudioWindow : Window
+    public partial class MainWindow : Window
     {
+        const string DefaultPath = @"D:\video\StreamerLibTests\2.opus";
+        
         private MMDevice mMDevice;
         private MMDeviceCollection mMDevices;
         private MMDeviceEnumerator mDeviceEnumerator;
         private StreamSession _streamSession;
-
-        const string DefaultPath = @"D:\\video\\img\\2.opus";
-
-        public AudioWindow()
+        
+        public MainWindow()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             mDeviceEnumerator = new();
             _streamSession = new();
+            FillComboBox();
+            devicesComboBox.SelectedIndex = 1;
+            pathTextBox.Text = DefaultPath;
+        }
+        
+        private void devicesComboBox_DropDownOpened(object sender, object e)
+        {
+            
         }
 
-        private void devicesComboBox_DropDownOpened(object sender, object e)
+        void FillComboBox()
         {
             mMDevices = mDeviceEnumerator.EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active);
             devicesComboBox.Items.Clear();
@@ -56,15 +61,15 @@ namespace StreamerLib
                 return;
             }
             
-            string Path;
+            string path;
             if (pathTextBox.Text.Length == 0)
-                Path = DefaultPath;
+                path = DefaultPath;
             else
-                Path = pathTextBox.Text;
+                path = pathTextBox.Text;
             _streamSession.AudioRecording = true;
             _streamSession.MMDevice = mMDevice;
             _streamSession.StartStream();
-            _streamSession.AddClientAsFile(Path);
+            _streamSession.AddClientAsFile(path);
             StartButton.Content = "Stop";
         }
 

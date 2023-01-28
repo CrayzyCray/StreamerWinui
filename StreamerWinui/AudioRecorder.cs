@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NAudio.Wave.SampleProviders;
 
-namespace StreamerWinui
+namespace StreamerLib
 {
     public unsafe class AudioRecorder : IDisposable
     {

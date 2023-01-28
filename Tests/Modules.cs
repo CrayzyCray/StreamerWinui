@@ -1,7 +1,8 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using FFmpeg.AutoGen.Abstractions;
 
-namespace StreamerWinui
+namespace StreamerLib
 {
     public unsafe struct Ddagrab : IDisposable
     {
@@ -90,9 +91,10 @@ namespace StreamerWinui
         public bool BufferIsFull => _buffer.IsFull;
         public int BufferedCount => _bufferSecond.Count;
         public List<int> SliceIndexes => _sliceIndexes;
+        public int SliceSizeInBytes => _sliceSizeInBytes;
         
-        private Buffer<byte> _buffer;
-        private Buffer<byte> _bufferSecond;
+        private ByteBuffer _buffer;
+        private ByteBuffer _bufferSecond;
         private int _sliceSizeInBytes;
         private List<int> _sliceIndexes = new();
         private byte[] _bufferNormal;
@@ -104,18 +106,20 @@ namespace StreamerWinui
             _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
         }
         
-        public AudioBufferSlicer(int sizeInBytes, int Channels)
+        public AudioBufferSlicer(int sizeInBytes)
         {
-            _buffer = new(sizeInBytes * Channels);
-            _bufferSecond = new(sizeInBytes * Channels);
-            _sliceSizeInBytes = sizeInBytes * Channels;
+            _buffer = new(sizeInBytes);
+            _bufferSecond = new(sizeInBytes);
+            _sliceSizeInBytes = sizeInBytes;
         }
-
+        
+        /// will be deleted
         /// buffers samples that do not fit the SliceSize
         /// <returns>Array of indexes in Buffer</returns>
         public void SendBuffer(byte[] buffer, int bufferLength) =>
             SliceBuffer(buffer, bufferLength);
         
+        /// will be deleted
         public AudioBufferSliced SliceBuffer(byte[] buffer, int bufferLength)
         {
             _bufferNormal = buffer;
@@ -142,6 +146,37 @@ namespace StreamerWinui
             _bufferSecond.Fill(buffer, bufferLength, index, bufferLength - index);
             
             return new AudioBufferSliced(_buffer.InternalArray, buffer, _sliceIndexes);
+        }
+        
+        public List<ArraySegment<byte>> SliceBufferToArraySegments(byte[] buffer, int bufferLength)
+        {
+            _bufferNormal = buffer;
+            int bytesWritedInBufferMode = 0;
+            
+            if (_buffer.IsFull)
+                _buffer.clear();
+
+            int retSize = (bufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes +
+                          Convert.ToInt32(_buffer.IsFull);
+            List<ArraySegment<byte>> buffersList = new List<ArraySegment<byte>>(retSize);
+            
+            //swap buffers
+            (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
+            
+            if (_buffer.NotEmpty)
+            {
+                bytesWritedInBufferMode = _buffer.SizeRemain;
+                _buffer.FillToEnd(buffer, bufferLength);
+                buffersList.Add(new ArraySegment<byte>(_buffer.InternalArray));
+            }
+
+            for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= bufferLength; i += _sliceSizeInBytes)
+                buffersList.Add(new ArraySegment<byte>(buffer, i, _sliceSizeInBytes));
+            
+            int index = bufferLength - (bufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes;
+            _bufferSecond.Fill(buffer, bufferLength, index, bufferLength - index);
+
+            return buffersList;
         }
     }
 
@@ -196,6 +231,49 @@ namespace StreamerWinui
         }
         
         public Buffer(int size) => _buffer = new T[size];
+    }
+    
+    public class ByteBuffer
+    {
+        public byte[] InternalArray => _buffer;
+        public int Count => _nextElementPointer;
+        public int Size => _buffer.Length;
+        public int SizeRemain => Size - Count;
+        public bool IsEmpty => Count == 0;
+        public bool NotEmpty => Count != 0;
+        public bool IsFull => Count == Size;
+        public void clear() => _nextElementPointer = 0;
+
+        public ref byte this[int Index] => ref _buffer[Index];
+            
+        private byte[] _buffer;
+        private int _nextElementPointer = 0;
+            
+        public void Append(in byte value)
+        {
+            if (_nextElementPointer >= _buffer.Length)
+                throw new Exception("buffer overflowed");
+            _buffer[_nextElementPointer] = value;
+            _nextElementPointer++;
+        }
+        
+        public void FillToEnd(byte[] Buffer, int BufferLength)
+        {
+            if (BufferLength < SizeRemain)
+                throw new ArgumentException("BufferLength less than remain size");
+            Array.Copy(Buffer, 0, _buffer, _nextElementPointer, SizeRemain);
+            _nextElementPointer = _buffer.Length;
+        }
+
+        public void Fill(byte[] Buffer, int BufferLength, int Index, int Length)
+        {
+            if (Index + Length > BufferLength || Length > SizeRemain)
+                throw new ArgumentOutOfRangeException();
+            Array.Copy(Buffer, Index, _buffer, _nextElementPointer, Length);
+            _nextElementPointer += Length;
+        }
+        
+        public ByteBuffer(int size) => _buffer = new byte[size];
     }
 
     public unsafe struct HardwareEncoder : IDisposable
@@ -262,8 +340,8 @@ namespace StreamerWinui
         public int StreamIndex { get; }
         public int SampleRate => _sampleRate;
         public AVSampleFormat SampleFormat => _sampleFormat;
-        public AVFrame* AvFrame;
         
+        private AVFrame* _avFrame;
         private AVCodecContext* _codecContext;
         private AVPacket* _packet;
         private Streamer _streamer;
@@ -280,22 +358,21 @@ namespace StreamerWinui
                 Encoders.LibOpus => "libopus",
                 _ => "libopus"
             };
-
+            
             SampleSizeInBytes = 4; //recorder specified
             _sampleRate = 48000; //encoder specified
             Channels = channels;
             _sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_FLT;
-            FrameSizeInSamples = _codecContext->frame_size;
-            FrameSizeInBytes = FrameSizeInSamples * channels * SampleSizeInBytes;
             
             AVCodec* codec = ffmpeg.avcodec_find_encoder_by_name(encoderName);
-
             _codecContext = ffmpeg.avcodec_alloc_context3(codec);
             _codecContext->sample_rate = _sampleRate;
             _codecContext->sample_fmt = _sampleFormat;
-            
             ffmpeg.av_channel_layout_default(&_codecContext->ch_layout, channels);
             ffmpeg.avcodec_open2(_codecContext, codec, null);
+            
+            FrameSizeInSamples = _codecContext->frame_size;
+            FrameSizeInBytes = FrameSizeInSamples * channels * SampleSizeInBytes;
             
             _packet = ffmpeg.av_packet_alloc();
             _timebase = new AVRational() { num = 1, den = _sampleRate };
@@ -304,19 +381,21 @@ namespace StreamerWinui
             ffmpeg.avcodec_parameters_from_context(_codecParameters, _codecContext);
             
             
-            AvFrame = ffmpeg.av_frame_alloc();
-            AvFrame->nb_samples = FrameSizeInSamples;
-            ffmpeg.av_channel_layout_default(&AvFrame->ch_layout, channels);
-            AvFrame->format = (int)SampleFormat;
+            _avFrame = ffmpeg.av_frame_alloc();
+            _avFrame->nb_samples = FrameSizeInSamples;
+            ffmpeg.av_channel_layout_default(&_avFrame->ch_layout, channels);
+            _avFrame->format = (int)SampleFormat;
             
             _streamer = streamer;
             StreamIndex = _streamer.AddAvStream(_codecParameters, _timebase);
         }
 
-        public void EncodeAndWriteFrame(AVFrame* AvFrame)
+        public void EncodeAndWriteFrame(ArraySegment<byte> buffer)
         {
-            AvFrame->pts = _pts;
-            ffmpeg.avcodec_send_frame(_codecContext, AvFrame);
+            fixed(byte* buf = &buffer.Array[buffer.Offset])
+                ffmpeg.avcodec_fill_audio_frame(_avFrame, Channels, SampleFormat, buf, FrameSizeInBytes, 1);
+            _avFrame->pts = _pts;
+            ffmpeg.avcodec_send_frame(_codecContext, _avFrame);
             
             if (ffmpeg.avcodec_receive_packet(_codecContext, _packet) == 0)
             {

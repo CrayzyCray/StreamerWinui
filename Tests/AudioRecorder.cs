@@ -6,7 +6,7 @@ using FFmpeg.AutoGen.Abstractions;
 using NAudio.Wave;
 using NAudio.CoreAudioApi;
 
-namespace StreamerWinui
+namespace StreamerLib
 {
     public unsafe class AudioRecorder : IDisposable
     {
@@ -60,7 +60,7 @@ namespace StreamerWinui
                 {
                     fixed (byte* buf = _audioBufferSlicer.Buffer)
                         ffmpeg.avcodec_fill_audio_frame(_avFrame, _audioEncoder.Channels, _audioEncoder.SampleFormat, buf, _frameSizeInBytes, 1);
-                    _audioEncoder.EncodeAndWriteFrame(_avFrame);
+                    //_audioEncoder.EncodeAndWriteFrame(_avFrame);
                     Debug.WriteLine("frame " + framesNumber++ + " writed (buffer)");
                 }
 
@@ -73,7 +73,7 @@ namespace StreamerWinui
                             buf,
                             _frameSizeInBytes,
                             1);
-                    _audioEncoder.EncodeAndWriteFrame(_avFrame);
+                    //_audioEncoder.EncodeAndWriteFrame(_avFrame);
                     Debug.WriteLine("frame " + framesNumber++ + " writed (normal)");
                 }
                 Debug.WriteLine("Buffered " + _audioBufferSlicer.BufferedCount);

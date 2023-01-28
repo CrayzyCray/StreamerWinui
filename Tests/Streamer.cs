@@ -1,7 +1,7 @@
 using System.Net;
 using FFmpeg.AutoGen.Abstractions;
 
-namespace StreamerWinui;
+namespace StreamerLib;
 
 public unsafe class Streamer : IDisposable
 {

@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NAudio.CoreAudioApi;
 
-namespace StreamerWinui
+namespace StreamerLib
 {
     public class StreamSession
     {

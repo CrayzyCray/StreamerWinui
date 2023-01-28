@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using FFmpeg.AutoGen.Abstractions;
 
-namespace StreamerWinui
+namespace StreamerLib
 {
     public class AudioBufferSlicer
     {
