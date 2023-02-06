@@ -21,14 +21,14 @@ namespace StreamerLib
         }
         
         private WasapiCapture _wasapiCapture;
-        private Streamer _streamer;
+        private StreamWriter _streamWriter;
         private AudioEncoder _audioEncoder;
         private AudioBufferSlicer _audioBufferSlicer;
         private AVFrame* _avFrame;
         private MMDevice _mmDevice;
 
 
-        public AudioRecorder(Streamer Streamer, Encoders encoder)
+        public AudioRecorder(StreamWriter streamWriter, Encoders encoder)
         {
             if (_mmDevice == null)
                 _wasapiCapture = new WasapiLoopbackCapture();
@@ -39,7 +39,7 @@ namespace StreamerLib
             else
                 throw new Exception("Wrong DataFlow");
 
-            _audioEncoder = new(Streamer, encoder);
+            _audioEncoder = new(streamWriter, encoder);
             _audioBufferSlicer = new(_audioEncoder.FrameSizeInSamples, 4, _audioEncoder.Channels);
             _avFrame = ffmpeg.av_frame_alloc();
             _avFrame->nb_samples = _audioEncoder.FrameSizeInSamples;

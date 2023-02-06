@@ -1,8 +1,8 @@
 ﻿<Application
-    x:Class="StreamerLib.App"
+    x:Class="StreamerWinui.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:StreamerLib">
+    xmlns:local="using:StreamerWinui">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 
 namespace StreamerLib
 {
@@ -283,12 +284,12 @@ namespace StreamerLib
         public AVCodecContext* codecContext;
         public AVPacket* packet;
         public int StreamIndex;
-        private Streamer _streamer;
+        private StreamWriter _streamWriter;
         private AVRational _timebase;
 
-        public HardwareEncoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContext, string hardwareEncoderName, Streamer streamer)
+        public HardwareEncoder(AVFormatContext* formatContext, AVBufferRef* hwFramesContext, string hardwareEncoderName, StreamWriter streamWriter)
         {
-            _streamer = streamer;
+            _streamWriter = streamWriter;
             codec = null;
             codecParameters = ffmpeg.avcodec_parameters_alloc();
             codecContext = null;
@@ -313,8 +314,8 @@ namespace StreamerLib
             ffmpeg.avcodec_send_frame(codecContext, hwFrame);
             if (ffmpeg.avcodec_receive_packet(codecContext, packet) != 0)
                 return;
-            ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, _streamer.StreamParametersList[StreamIndex].Timebase);
-            _streamer.WriteFrame(packet, _timebase);
+            ffmpeg.av_packet_rescale_ts(packet, codecContext->time_base, _streamWriter.GetStreamParameters(StreamIndex).Timebase);
+            _streamWriter.WriteFrame(packet, _timebase);
             Console.WriteLine("frame " + codecContext->frame_number + " writed");
         }
 
@@ -344,14 +345,14 @@ namespace StreamerLib
         private AVFrame* _avFrame;
         private AVCodecContext* _codecContext;
         private AVPacket* _packet;
-        private Streamer _streamer;
+        private StreamWriter _streamWriter;
         private long _pts;
         private AVRational _timebase;
         private AVCodecParameters* _codecParameters;
         private AVSampleFormat _sampleFormat;
         private int _sampleRate;
 
-        public AudioEncoder(Streamer streamer, Encoders encoder, int channels = 2)
+        public AudioEncoder(StreamWriter streamWriter, Encoders encoder, int channels = 2)
         {
             string encoderName = encoder switch
             {
@@ -386,8 +387,8 @@ namespace StreamerLib
             ffmpeg.av_channel_layout_default(&_avFrame->ch_layout, channels);
             _avFrame->format = (int)SampleFormat;
             
-            _streamer = streamer;
-            StreamIndex = _streamer.AddAvStream(_codecParameters, _timebase);
+            _streamWriter = streamWriter;
+            StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
         }
 
         public void EncodeAndWriteFrame(ArraySegment<byte> buffer)
@@ -400,7 +401,7 @@ namespace StreamerLib
             if (ffmpeg.avcodec_receive_packet(_codecContext, _packet) == 0)
             {
                 _packet->stream_index = StreamIndex;
-                _streamer.WriteFrame(_packet, _timebase);
+                _streamWriter.WriteFrame(_packet, _timebase);
                 ffmpeg.av_packet_unref(_packet);
             }
 
@@ -498,6 +499,38 @@ namespace StreamerLib
     {
         Audio,
         Video
+    }
+
+    public static class FFmpegHelper
+    {
+        public static unsafe void ErrStrPrint(int errNum)
+        {
+            int maxErrorStringSize = 64;
+            byte[] str1 = new byte[maxErrorStringSize];
+            fixed (byte* str2 = str1)
+            {
+                ffmpeg.av_make_error_string(str2, 64, errNum);
+                DebugLogUnmanagedPtr(str2);
+            }
+        }
+        
+        public static void InicializeFFmpeg()
+        {
+            SetFfmpegBinaresPath(@"C:\Users\Cray\Desktop\Programs\ffmpeg");
+            DynamicallyLoadedBindings.Initialize();
+        }
+
+        public static unsafe void DebugLogUnmanagedPtr(byte* ptr) =>
+            Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
+
+        public static unsafe string UnmanagedPtrToString(byte* ptr) =>
+            Marshal.PtrToStringAnsi((IntPtr)ptr) ?? String.Empty;
+
+        static void SetFfmpegBinaresPath()=>
+            DynamicallyLoadedBindings.LibrariesPath = Path.Combine(Environment.CurrentDirectory, "ffmpeg", "bin");
+
+        static void SetFfmpegBinaresPath(string path) =>
+            DynamicallyLoadedBindings.LibrariesPath = path; 
     }
 }
 

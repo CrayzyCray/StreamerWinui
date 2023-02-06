@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="MainWindow" Height="200" Width="200">
+    <Grid Background="Black">
         <StackPanel Width="100" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <ComboBox Name="devicesComboBox" DropDownOpened="devicesComboBox_DropDownOpened" SelectionChanged="devicesComboBox_SelectionChanged">
+            <ComboBox Name="devicesComboBox" SelectionChanged="devicesComboBox_SelectionChanged">
                 
             </ComboBox>
             <TextBox Name="pathTextBox"></TextBox>

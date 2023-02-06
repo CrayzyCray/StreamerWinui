@@ -13,9 +13,10 @@ using NAudio.CoreAudioApi;
 
 namespace StreamerLib
 {
-    public class StreamSession
+    public class StreamController
     {
         public const Encoders DefaultVideoEncoder = Encoders.HevcNvenc;
+        public const Encoders DefaultAudioEncoder = Encoders.LibOpus;
         
         public bool StreamIsActive => _streamIsActive;
         /// <summary>
@@ -66,40 +67,36 @@ namespace StreamerLib
         private Size _cropResolution;
         private Encoders _encoder;
         private double _resolutionMultiplyer = 1;
-        private Task _task;
         private Ddagrab _ddagrab;
         private HardwareEncoder _hardwareEncoder;
         private AudioRecorder _audioRecorder;
-        private Streamer _streamer;
-
+        private StreamWriter _streamWriter = new();
         private MasterChannel _masterChannel;
 
         public void StartStream()
         {
-            if (!_audioRecording) 
-                return;
+            Validate();
+            
             _streamIsActive = true;
-
-            //_audioRecorder = new AudioRecorder(_streamer, Encoders.LibOpus);
-            //_audioRecorder.MMDevice = MMDevice;
-            //_audioRecorder.StartEncoding();
-            _masterChannel = new MasterChannel(_streamer, Encoders.LibOpus);
+            
+            _masterChannel = new MasterChannel(_streamWriter, Encoders.LibOpus);
             _masterChannel.AddChannel(MMDevice);
             _masterChannel.StartStreaming();
         }
         
-        /// <summary>
-        /// send signal to stop stream
-        /// </summary>
         public void StopStream()
         {
             _masterChannel.Dispose();
-            _streamer.Dispose();
+            _streamWriter.Stop();
         }
 
-        public bool AddClient(IPAddress ipAddress, int port = Streamer.DefaultPort) => _streamer.AddClient(ipAddress, port);
-        public bool AddClientAsFile(string Path) => _streamer.AddClientAsFile(Path);
-        public void WaitTask() => _task.Wait();
+        public StreamController()
+        {
+            FFmpegHelper.InicializeFFmpeg();
+        }
+
+        public bool AddClient(IPAddress ipAddress, int port = StreamWriter.DefaultPort) => _streamWriter.AddClient(ipAddress, port);
+        public bool AddClientAsFile(string Path) => _streamWriter.AddClientAsFile(Path);
 
         private string DdagrabParametersToString()
         {
@@ -126,12 +123,12 @@ namespace StreamerLib
             return string.Empty;
         }
 
-        public StreamSession()
+        private void Validate()
         {
-            if (DynamicallyLoadedBindings.LibrariesPath == String.Empty)
-                Inicialize();
-            
-            _streamer = new Streamer();
+            if (!_audioRecording) 
+                throw new Exception("Nothing set to record");
+            if (MMDevice == null)
+                throw new Exception("MMDevice not set");
         }
 
         public static readonly Codec[] SupportedCodecs =
@@ -143,34 +140,5 @@ namespace StreamerLib
             new Codec("AV1 Nvidia", "av1_nvenc", Encoders.Av1Nvenc, MediaTypes.Video),
             new Codec("Opus", "libopus", Encoders.LibOpus, MediaTypes.Audio)
         };
-
-        public static unsafe void ErrStrPrint(int errNum)
-        {
-            int maxErrorStringSize = 64;
-            byte[] str1 = new byte[maxErrorStringSize];
-            fixed (byte* str2 = str1)
-            {
-                ffmpeg.av_make_error_string(str2, 64, errNum);
-                DebugLogUnmanagedPtr(str2);
-            }
-        }
-        
-        public static void Inicialize()
-        {
-            SetFfmpegBinaresPath(@"C:\Users\Cray\Desktop\Programs\ffmpeg");
-            DynamicallyLoadedBindings.Initialize();
-        }
-
-        public static unsafe void DebugLogUnmanagedPtr(byte* ptr) =>
-            Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
-
-        public static unsafe string UnmanagedPtrToString(byte* ptr) =>
-            Marshal.PtrToStringAnsi((IntPtr)ptr) ?? String.Empty;
-
-        static void SetFfmpegBinaresPath()=>
-            DynamicallyLoadedBindings.LibrariesPath = Path.Combine(Environment.CurrentDirectory, "ffmpeg", "bin");
-
-        static void SetFfmpegBinaresPath(string path) =>
-            DynamicallyLoadedBindings.LibrariesPath = path; 
     }
 }

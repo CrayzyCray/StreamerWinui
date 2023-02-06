@@ -26,37 +26,31 @@ namespace WpfApp
         
         private MMDevice mMDevice;
         private MMDeviceCollection mMDevices;
-        private MMDeviceEnumerator mDeviceEnumerator;
-        private StreamSession _streamSession;
+        private StreamController _streamController = new();
         
         public MainWindow()
         {
             InitializeComponent();
-            mDeviceEnumerator = new();
-            _streamSession = new();
             FillComboBox();
-            devicesComboBox.SelectedIndex = 1;
-            pathTextBox.Text = DefaultPath;
-        }
-        
-        private void devicesComboBox_DropDownOpened(object sender, object e)
-        {
             
+            pathTextBox.Text = DefaultPath;
         }
 
         void FillComboBox()
         {
-            mMDevices = mDeviceEnumerator.EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active);
+            mMDevices = new MMDeviceEnumerator().EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active);
             devicesComboBox.Items.Clear();
             foreach (var item in mMDevices)
                 devicesComboBox.Items.Add(item.FriendlyName);
+            devicesComboBox.SelectedIndex = 1;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (_streamSession.StreamIsActive)
+            if (_streamController.StreamIsActive)
             {
-                _streamSession.StopStream();
+                _streamController.StopStream();
+                _streamController = new();
                 StartButton.Content = "Start";
                 return;
             }
@@ -66,10 +60,10 @@ namespace WpfApp
                 path = DefaultPath;
             else
                 path = pathTextBox.Text;
-            _streamSession.AudioRecording = true;
-            _streamSession.MMDevice = mMDevice;
-            _streamSession.StartStream();
-            _streamSession.AddClientAsFile(path);
+            _streamController.AudioRecording = true;
+            _streamController.MMDevice = mMDevice;
+            _streamController.StartStream();
+            _streamController.AddClientAsFile(path);
             StartButton.Content = "Stop";
         }
 

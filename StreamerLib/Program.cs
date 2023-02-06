@@ -16,14 +16,14 @@ namespace StreamerLib
         {
             string ip = "192.168.0.115";
             
-            StreamSession streamSession = new();
-            streamSession.VideoRecording = false;
-            streamSession.AudioRecording = true;
-            streamSession.StartStream();
+            StreamController streamController = new();
+            streamController.VideoRecording = false;
+            streamController.AudioRecording = true;
+            streamController.StartStream();
             //streamSession.AddClient(IPAddress.Parse(ip));
-            streamSession.AddClientAsFile(@"D:\video\img\2.opus");
+            streamController.AddClientAsFile(@"D:\video\img\2.opus");
             Thread.Sleep(50000);
-            streamSession.StopStream();
+            streamController.StopStream();
             //StreamSession.errStrPrint(-1313558101);
         }
     }
