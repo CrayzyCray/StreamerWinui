@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <AssemblyName>StreamerLib</AssemblyName>
     <RootNamespace>StreamerLib</RootNamespace>
+    <SelfContained>true</SelfContained>
 	  <!--
 	<SelfContained>true</SelfContained>
 	  -->
@@ -20,11 +21,4 @@
     <PackageReference Include="NAudio.Core" Version="2.1.0" />
     <PackageReference Include="NAudio.Wasapi" Version="2.1.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Update="ConsoleApplication1.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

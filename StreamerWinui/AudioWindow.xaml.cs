@@ -1,40 +1,22 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using NAudio.Wasapi;
-using NAudio.CoreAudioApi;
-using System.Diagnostics;
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Windowing;
-using WinRT.Interop;
-using WinRT;
-using System.Runtime.InteropServices;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using NAudio.CoreAudioApi;
 using StreamerWinui.UserControls;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using System;
+using System.Diagnostics;
+using Windows.Foundation;
+using WinRT;
+using WinRT.Interop;
 
 namespace StreamerWinui
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class AudioWindow : Window
     {
         private MMDevice mMDevice;
         private MMDeviceCollection mMDevices;
-        private MMDeviceEnumerator mDeviceEnumerator;
+        private MMDeviceEnumerator mDeviceEnumerator = new();
         //private StreamSession _streamSession;
         private AppWindow m_AppWindow;
 
@@ -49,30 +31,11 @@ namespace StreamerWinui
             this.ExtendsContentIntoTitleBar = true;
             this.SetTitleBar(AppTitleBar);
 
-            m_AppWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 380, Height = 500 });
-            SetTitleBarColors();
-
-            Debug.WriteLine(".NET " + Environment.Version.ToString());
-
-            if (Microsoft.UI.Windowing.AppWindowTitleBar.IsCustomizationSupported())
-            {
-                Debug.WriteLine("AppTitleBar customization is supported");
-            }
-
-            mDeviceEnumerator = new();
-            //_streamSession = new();
-            var t = new MixerChannel();
-            StackPanel.Children.Add(t);
-            t = new();
-            StackPanel.Children.Add(t);
-
+            m_AppWindow.Resize(new Windows.Graphics.SizeInt32 { 
+                Width = 380, 
+                Height = 500 });
+            AddMixerChannel(new MixerChannel());
             FillComboBox();
-            devicesComboBox.SelectedIndex = 0;
-        }
-
-        private void devicesComboBox_DropDownOpened(object sender, object e)
-        {
-            
         }
 
         public void FillComboBox()
@@ -81,9 +44,20 @@ namespace StreamerWinui
             devicesComboBox.Items.Clear();
             foreach (var item in mMDevices)
                 devicesComboBox.Items.Add(item.FriendlyName);
+            devicesComboBox.SelectedIndex = 0;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        public void AddMixerChannel(MixerChannel mixerChannel) => StackPanel.Children.Add(mixerChannel);
+
+        private void PrintDebugInfo()
+        {
+            Debug.WriteLine(".NET " + Environment.Version.ToString());
+
+            if (AppWindowTitleBar.IsCustomizationSupported())
+                Debug.WriteLine("AppTitleBar customization is supported");
+        }
+
+        private void StartButton_Click(object sender, RoutedEventArgs e)
         {
             //if (_streamSession.StreamIsActive)
             //{
@@ -104,8 +78,7 @@ namespace StreamerWinui
             //StartButton.Content = "Stop";
         }
 
-        private void devicesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-            mMDevice = mMDevices[devicesComboBox.SelectedIndex];
+        private void devicesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => mMDevice = mMDevices[devicesComboBox.SelectedIndex];
 
         private Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController m_acrylicController;
         private Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration m_configurationSource;
@@ -137,10 +110,8 @@ namespace StreamerWinui
             return true; // succeeded
         }
 
-        private void WindowActivated(object sender, WindowActivatedEventArgs args)
-        {
+        private void WindowActivated(object sender, WindowActivatedEventArgs args) =>
             m_configurationSource.IsInputActive = args.WindowActivationState != WindowActivationState.Deactivated;
-        }
 
         private void WindowClosed(object sender, WindowEventArgs args)
         {
@@ -158,9 +129,7 @@ namespace StreamerWinui
         private void WindowThemeChanged(FrameworkElement sender, object args)
         {
             if (m_configurationSource != null)
-            {
                 SetConfigurationSourceTheme();
-            }
         }
 
         private void SetConfigurationSourceTheme()
@@ -177,33 +146,32 @@ namespace StreamerWinui
         {
             // Check to see if customization is supported.
             // Currently only supported on Windows 11.
-            if (AppWindowTitleBar.IsCustomizationSupported())
-            {
-                if (m_AppWindow is null)
-                {
-                    m_AppWindow = GetAppWindowForCurrentWindow();
-                }
-                var titleBar = m_AppWindow.TitleBar;
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+                return false;
 
-                // Set active window colors
-                titleBar.ForegroundColor = Colors.White;
-                titleBar.BackgroundColor = Colors.Green;
-                titleBar.ButtonForegroundColor = Colors.White;
-                titleBar.ButtonBackgroundColor = Colors.SeaGreen;
-                titleBar.ButtonHoverForegroundColor = Colors.Gainsboro;
-                titleBar.ButtonHoverBackgroundColor = Colors.DarkSeaGreen;
-                titleBar.ButtonPressedForegroundColor = Colors.Gray;
-                titleBar.ButtonPressedBackgroundColor = Colors.LightGreen;
+            if (m_AppWindow is null)
+                m_AppWindow = GetAppWindowForCurrentWindow();
 
-                // Set inactive window colors
-                titleBar.InactiveForegroundColor = Colors.Gainsboro;
-                titleBar.InactiveBackgroundColor = Colors.SeaGreen;
-                titleBar.ButtonInactiveForegroundColor = Colors.Gainsboro;
-                titleBar.ButtonInactiveBackgroundColor = Colors.SeaGreen;
-                return true;
-            }
-            return false;
+            var titleBar = m_AppWindow.TitleBar;
+
+            // Set active window colors
+            titleBar.ForegroundColor = Colors.White;
+            titleBar.BackgroundColor = Colors.Green;
+            titleBar.ButtonForegroundColor = Colors.White;
+            titleBar.ButtonBackgroundColor = Colors.SeaGreen;
+            titleBar.ButtonHoverForegroundColor = Colors.Gainsboro;
+            titleBar.ButtonHoverBackgroundColor = Colors.DarkSeaGreen;
+            titleBar.ButtonPressedForegroundColor = Colors.Gray;
+            titleBar.ButtonPressedBackgroundColor = Colors.LightGreen;
+
+            // Set inactive window colors
+            titleBar.InactiveForegroundColor = Colors.Gainsboro;
+            titleBar.InactiveBackgroundColor = Colors.SeaGreen;
+            titleBar.ButtonInactiveForegroundColor = Colors.Gainsboro;
+            titleBar.ButtonInactiveBackgroundColor = Colors.SeaGreen;
+            return true;
         }
+
         private AppWindow GetAppWindowForCurrentWindow()
         {
             IntPtr hWnd = WindowNative.GetWindowHandle(this);
@@ -211,9 +179,19 @@ namespace StreamerWinui
             return AppWindow.GetFromWindowId(wndId);
         }
 
-        private void UpdateDevicesListButton_Click(object sender, RoutedEventArgs e)
+        private void UpdateDevicesListButton_Click(object sender, RoutedEventArgs e) => FillComboBox();
+
+        private void AddButton_OnClick(object sender, RoutedEventArgs e)
         {
-            FillComboBox();
+            var m = new MixerChannel(mMDevices[devicesComboBox.SelectedIndex]);
+            StackPanel.Children.Add(m);
+        }
+
+        private void CanvasControl_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)
+        {
+            var rect = new Rect(0, 0, 10, 10);
+            args.DrawingSession.DrawRectangle(rect, Colors.Black);
+            Debug.WriteLine("Draw");
         }
     }
 }

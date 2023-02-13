@@ -28,7 +28,7 @@ namespace StreamerLib
             if (_streamParametersList.Count == 0)
                 return false;
 
-            string outputUrl = $"rist://{ipAddress.ToString()}:{port}";
+            string outputUrl = $"rist://{ipAddress}:{port}";
 
             AVFormatContext* formatContext = null;
             ffmpeg.avformat_alloc_output_context2(&formatContext, null, "mpegts", null);

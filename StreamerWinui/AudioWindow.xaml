@@ -5,12 +5,13 @@
     xmlns:local="using:StreamerWinui"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
     mc:Ignorable="d">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="48"/>
-            <RowDefinition Height="140"/>
+            <RowDefinition Height="180"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
         
@@ -26,18 +27,20 @@
                     <Button Name="UpdateDevicesListButton" Click="UpdateDevicesListButton_Click">
                         <SymbolIcon Symbol="Refresh"/>
                     </Button>
-                    <ComboBox x:Name="devicesComboBox" DropDownOpened="devicesComboBox_DropDownOpened" SelectionChanged="devicesComboBox_SelectionChanged"></ComboBox>
-                    <Button>
+                    <ComboBox x:Name="devicesComboBox" SelectionChanged="devicesComboBox_SelectionChanged" Width="244"></ComboBox>
+                    <Button Name="AddButton" Click="AddButton_OnClick">
                         <SymbolIcon Symbol="Add"/>
                     </Button>
                 </StackPanel>
                 
                 <TextBox Name="pathTextBox"></TextBox>
-                <Button Name="StartButton" Click="Button_Click">Startee</Button>
-                
+                <Button Name="StartButton" Click="StartButton_Click">Starte</Button>
+                <canvas:CanvasControl Draw="CanvasControl_Draw" Width="200" Height="30"></canvas:CanvasControl>
             </StackPanel>
         </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Vertical" Name="StackPanel" Spacing="3" Padding="6"/>
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Orientation="Vertical" Name="StackPanel" Spacing="3" Padding="6"/>
+        </ScrollViewer>
     </Grid>
 </Window>
