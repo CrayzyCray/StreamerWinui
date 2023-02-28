@@ -43,6 +43,7 @@
         <ScrollViewer Grid.Row="2">
             <StackPanel Orientation="Vertical" Spacing="6">
                 <uc:MixerChannelControl x:Name="MixerChannelContainer"/>
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </Window>
