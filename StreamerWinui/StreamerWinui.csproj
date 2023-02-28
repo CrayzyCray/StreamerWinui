@@ -12,6 +12,9 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="UserControls\MixerChannelControl.xaml" />
+  </ItemGroup>
   
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -27,7 +30,7 @@
     <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="5.1.1.1" />
     <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="5.1.1.1" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.0.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.230118.102" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.230217.4" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.755" />
     <Manifest Include="$(ApplicationManifest)" />
     <PackageReference Include="NAudio.Wasapi" Version="2.1.0" />
@@ -48,6 +51,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StreamerLib\StreamerLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="UserControls\MixerChannelControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <!-- 

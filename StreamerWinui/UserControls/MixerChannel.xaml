@@ -13,7 +13,7 @@
 
     <Grid Height="70" CornerRadius="6" Background="#6000">
         <Canvas Name="Canvas">
-            <Rectangle Name="Rect" Fill="Green" Height="70" Width="100"></Rectangle>
+            <Rectangle Name="Rect" Fill="{StaticResource SystemAccentColor}" Height="70" Width="100"></Rectangle>
         </Canvas>
 
         <Grid Padding="6">
@@ -24,7 +24,7 @@
             <Rectangle Fill="Transparent">
                 <Rectangle.ContextFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="Delete" Tag="delete"/>
+                        <MenuFlyoutItem Text="Delete" Tag="delete" Click="DeleteButton_Click"/>
                     </MenuFlyout>
                 </Rectangle.ContextFlyout>
             </Rectangle>
