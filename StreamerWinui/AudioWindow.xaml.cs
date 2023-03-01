@@ -156,5 +156,17 @@ namespace StreamerWinui
         {
             FillDevicesComboBox();
         }
+
+        private void devicesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if(devicesComboBox.SelectedItem is MMDevice device)
+            {
+                var m = new MixerChannel(device);
+                MixerChannelContainer.AddChannel(m);
+                devicesComboBox.SelectedIndex = -1;
+            }
+            //FillDevicesComboBox();
+            //devicesComboBox.ItemsSource = Array.Empty<MMDevice>();
+        }
     }
 }
