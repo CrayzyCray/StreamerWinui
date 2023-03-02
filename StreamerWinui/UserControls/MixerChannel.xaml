@@ -11,10 +11,8 @@
     xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
     mc:Ignorable="d">
 
-    <Grid Height="70" CornerRadius="6" Background="#6000">
-        <Canvas Name="Canvas">
-            <Rectangle Name="Rect" Fill="{StaticResource SystemAccentColor}" Height="70" Width="100"></Rectangle>
-        </Canvas>
+    <Grid Height="70" Width="352" CornerRadius="6" Background="#6000">
+        <canvas:CanvasControl Name="Canvas" Draw="Canvas_Draw"></canvas:CanvasControl>
 
         <Grid Padding="6">
             <TextBlock

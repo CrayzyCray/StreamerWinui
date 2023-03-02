@@ -1,3 +1,4 @@
+using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
@@ -7,11 +8,13 @@ namespace StreamerWinui.UserControls
 {
     public sealed partial class MixerChannel : UserControl
     {
-        public const double MinimumVolumeMeterLevel = -62;
+        public const double MinimumVolumeMeterLevelDbfs = -62;
 
         public MMDevice Device { get; }
         public event EventHandler OnDeleting;
         private WasapiCapture _audioCapture;
+        public const int Width = 352;
+        public const int Height = 70;
 
         public MixerChannel(MMDevice mmDevice)
         {
@@ -27,23 +30,13 @@ namespace StreamerWinui.UserControls
             _audioCapture.StartRecording();
             _audioCapture.DataAvailable += _captureDataRecieved;
             DeviceNameTextBlock.Text = mmDevice.FriendlyName;
+            rect = new Windows.Foundation.Rect(0, 0, 0, Height);
         }
 
-        public bool SetVolumeMeterLevel(double dbfs)
+        public void SetVolumeMeterLevel(double dbfs)
         {
-            if (DispatcherQueue == null)
-                return false;
-
-            return DispatcherQueue.TryEnqueue(() =>
-            {
-                var width = (-MinimumVolumeMeterLevel + dbfs) * Canvas.ActualWidth / -MinimumVolumeMeterLevel;
-                if (width < 0)
-                    width = 0;
-                else if (width > Canvas.ActualWidth)
-                    width = Canvas.ActualWidth;
-
-                Rect.Width = width;
-            });
+            this.dbfs = dbfs;
+            Canvas.Invalidate();
         }
 
         private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs e)
@@ -71,6 +64,21 @@ namespace StreamerWinui.UserControls
         {
             _audioCapture.Dispose();
             OnDeleting.Invoke(this, null);
+        }
+
+        Windows.Foundation.Rect rect;
+        Windows.UI.Color VolumeMeterColor = Colors.White;
+        double dbfs = 0;
+
+        private void Canvas_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)
+        {
+            var width = (-MinimumVolumeMeterLevelDbfs + dbfs) * Width / -MinimumVolumeMeterLevelDbfs;
+            if (width < 0)
+                width = 0;
+            else if (width > Width)
+                width = Width;
+            rect.Width = width;
+            args.DrawingSession.DrawLine((float)width, 0, (float)width, Height, Colors.Green, 1);
         }
     }
 }
