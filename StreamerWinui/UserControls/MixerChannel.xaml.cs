@@ -13,8 +13,8 @@ namespace StreamerWinui.UserControls
         public MMDevice Device { get; }
         public event EventHandler OnDeleting;
         private WasapiCapture _audioCapture;
-        public const int Width = 352;
-        public const int Height = 70;
+        const int _width = 352;
+        const int _height = 70;
 
         public MixerChannel(MMDevice mmDevice)
         {
@@ -30,13 +30,12 @@ namespace StreamerWinui.UserControls
             _audioCapture.StartRecording();
             _audioCapture.DataAvailable += _captureDataRecieved;
             DeviceNameTextBlock.Text = mmDevice.FriendlyName;
-            rect = new Windows.Foundation.Rect(0, 0, 0, Height);
         }
 
         public void SetVolumeMeterLevel(double dbfs)
         {
             this.dbfs = dbfs;
-            Canvas.Invalidate();
+            VolumeCanvas.Invalidate();
         }
 
         private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs e)
@@ -67,18 +66,23 @@ namespace StreamerWinui.UserControls
         }
 
         Windows.Foundation.Rect rect;
-        Windows.UI.Color VolumeMeterColor = Colors.White;
+        Windows.UI.Color VolumeMeterColor = Colors.Green;
         double dbfs = 0;
 
         private void Canvas_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)
         {
-            var width = (-MinimumVolumeMeterLevelDbfs + dbfs) * Width / -MinimumVolumeMeterLevelDbfs;
+            var width = (-MinimumVolumeMeterLevelDbfs + dbfs) * _width / -MinimumVolumeMeterLevelDbfs;
             if (width < 0)
                 width = 0;
-            else if (width > Width)
-                width = Width;
+            else if (width > _width)
+                width = _width;
             rect.Width = width;
-            args.DrawingSession.DrawLine((float)width, 0, (float)width, Height, Colors.Green, 1);
+            args.DrawingSession.DrawLine((float)(width - 1), 0, (float)(width - 1), _height, VolumeMeterColor, 1);
+        }
+
+        public void Dispose()
+        {
+            _audioCapture.Dispose();
         }
     }
 }

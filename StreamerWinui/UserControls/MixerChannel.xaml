@@ -12,7 +12,7 @@
     mc:Ignorable="d">
 
     <Grid Height="70" Width="352" CornerRadius="6" Background="#6000">
-        <canvas:CanvasControl Name="Canvas" Draw="Canvas_Draw"></canvas:CanvasControl>
+        <canvas:CanvasControl Name="VolumeCanvas" Draw="Canvas_Draw"></canvas:CanvasControl>
 
         <Grid Padding="6">
             <TextBlock

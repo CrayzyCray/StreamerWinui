@@ -17,7 +17,6 @@ namespace StreamerWinui
 {
     public sealed partial class AudioWindow : Window
     {
-        //private StreamSession _streamSession;
         private AppWindow m_AppWindow;
 
         public readonly SizeInt32 DefaultWindowSize = new SizeInt32(380, 500);
@@ -36,42 +35,12 @@ namespace StreamerWinui
 
             FillDevicesComboBox();
         }
-        MMDeviceCollection mMDevices;
 
-        public async void FillDevicesComboBox()
-        {
-            devicesComboBox.ItemsSource = new MMDeviceEnumerator().EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active);
-        }
-
-        public void AddMixerChannel(MixerChannel mixerChannel) => MixerChannelContainer.AddChannel(mixerChannel);
-
-        private void UpdateDevicesListButton_Click(object sender, RoutedEventArgs e) => FillDevicesComboBox();
-
-        private void AddButton_OnClick(object sender, RoutedEventArgs e)
-        {
-            var m = new MixerChannel(devicesComboBox.SelectedItem as MMDevice);
-            MixerChannelContainer.AddChannel(m);
-        }
+        public void FillDevicesComboBox() => devicesComboBox.ItemsSource = MixerChannelContainer.GetAvalibleDevices();
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            //if (_streamSession.StreamIsActive)
-            //{
-            //    _streamSession.StopStream();
-            //    StartButton.Content = "Start";
-            //    return;
-            //}
 
-            //string Path;
-            //if (pathTextBox.Text.Length == 0)
-            //    Path = DefaultPath;
-            //else
-            //    Path = pathTextBox.Text;
-            //_streamSession.AudioRecording = true;
-            //_streamSession.MMDevice = mMDevice;
-            //_streamSession.StartStream();
-            //_streamSession.AddClientAsFile(Path);
-            //StartButton.Content = "Stop";
         }
 
         private void PrintDebugInfo()
@@ -114,6 +83,8 @@ namespace StreamerWinui
 
         private void WindowClosed(object sender, WindowEventArgs args)
         {
+            if (MixerChannelContainer != null)
+                MixerChannelContainer.Dispose();
             if (m_micaController != null)
             {
                 m_micaController.Dispose();
