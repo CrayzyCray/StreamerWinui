@@ -18,6 +18,8 @@ namespace StreamerWinui
     public sealed partial class AudioWindow : Window
     {
         private AppWindow m_AppWindow;
+        private StreamerLib.StreamController _streamController = new();
+        private MixerChannelControl _mixerChannelControl;
 
         public readonly SizeInt32 DefaultWindowSize = new SizeInt32(380, 500);
 
@@ -26,21 +28,29 @@ namespace StreamerWinui
         public AudioWindow()
         {
             InitializeComponent();
+            CreateMixerChannelControl();
             TrySetMicaBackdrop();
             m_AppWindow = GetAppWindowForCurrentWindow();
             m_AppWindow.Resize(DefaultWindowSize);
 
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);
+            DotNetTextBlock.Text = ".NET " + Environment.Version;
 
             FillDevicesComboBox();
         }
 
-        public void FillDevicesComboBox() => devicesComboBox.ItemsSource = MixerChannelContainer.GetAvalibleDevices();
+        public void FillDevicesComboBox() => devicesComboBox.ItemsSource = _mixerChannelControl.GetAvalibleDevices();
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void CreateMixerChannelControl()
+        {
+            _mixerChannelControl = new(_streamController.StreamWriter);
+            MixerChannelControlContainer.Children.Add(_mixerChannelControl);
         }
 
         private void PrintDebugInfo()
@@ -83,8 +93,8 @@ namespace StreamerWinui
 
         private void WindowClosed(object sender, WindowEventArgs args)
         {
-            if (MixerChannelContainer != null)
-                MixerChannelContainer.Dispose();
+            if (_mixerChannelControl != null)
+                _mixerChannelControl.Dispose();
             if (m_micaController != null)
             {
                 m_micaController.Dispose();
@@ -133,7 +143,7 @@ namespace StreamerWinui
             if(devicesComboBox.SelectedItem is MMDevice device)
             {
                 var m = new MixerChannel(device);
-                MixerChannelContainer.AddChannel(m);
+                _mixerChannelControl.AddChannel(m);
                 devicesComboBox.SelectedIndex = -1;
             }
             //FillDevicesComboBox();

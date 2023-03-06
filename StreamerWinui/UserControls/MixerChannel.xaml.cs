@@ -66,7 +66,7 @@ namespace StreamerWinui.UserControls
         }
 
         Windows.Foundation.Rect rect;
-        Windows.UI.Color VolumeMeterColor = Colors.Green;
+        Windows.UI.Color VolumeMeterColor = Windows.UI.Color.FromArgb(128, 0, 255, 0);
         double dbfs = 0;
 
         private void Canvas_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)

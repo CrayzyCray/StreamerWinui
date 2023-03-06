@@ -9,24 +9,29 @@ namespace StreamerLib
     {
         public const int SampleSizeInBytes = 4;
 
+        public List<WasapiAudioCapturingChannel> WasapiAudioChannels => _wasapiAudioChannels;
+        public int FrameSizeInBytes => _audioEncoder.FrameSizeInBytes;
+
         private AudioEncoder _audioEncoder;
         private int _channelIdPointer = 0;
-        private List<WasapiAudioCapturingChannel> _wasapiAudioChannels;
+        private List<WasapiAudioCapturingChannel> _wasapiAudioChannels = new(2);
 
         public MasterChannel(StreamWriter streamWriter, Encoders encoder)
         {
             _audioEncoder = new(streamWriter, encoder);
-            _wasapiAudioChannels = new List<WasapiAudioCapturingChannel>(2);
         }
 
-        public void AddChannel(MMDevice mmDevice, float volume = 1f)
+        public void AddChannel(MMDevice mmDevice)
         {
-            var channel = new WasapiAudioCapturingChannel(mmDevice, GetNewRegisteredId(), _audioEncoder.FrameSizeInBytes)
-            {
-                Volume = volume
-            };
+            var channel = new WasapiAudioCapturingChannel(mmDevice, GetNewID(), _audioEncoder.FrameSizeInBytes);
             channel.DataAvailable += RecieveBuffer;
             _wasapiAudioChannels.Add(channel);
+        }
+
+        public void AddChannel(WasapiAudioCapturingChannel capturingChannel)
+        {
+            capturingChannel.DataAvailable += RecieveBuffer;
+            _wasapiAudioChannels.Add(capturingChannel);
         }
 
         public void DeleteAllChannels()
@@ -52,7 +57,7 @@ namespace StreamerLib
                 _audioEncoder.EncodeAndWriteFrame(test.ReadNextBuffer());
         }
 
-        private int GetNewRegisteredId() => ++_channelIdPointer;
+        public int GetNewID() => ++_channelIdPointer;
 
         public void Dispose()
         {
@@ -60,7 +65,7 @@ namespace StreamerLib
         }
     }
 
-    class WasapiAudioCapturingChannel
+    public class WasapiAudioCapturingChannel
     {
         public const float DefaultVolume = 1f;
         public const int QueueCapacity = 8;

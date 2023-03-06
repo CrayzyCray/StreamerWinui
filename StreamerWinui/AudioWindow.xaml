@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
         
         <Grid>
-            <AppBarButton Icon="Setting" Width="48"/>
+            <TextBlock Name="DotNetTextBlock"></TextBlock>
             <Border Name="AppTitleBar" Canvas.ZIndex="1"/>
         </Grid>
 
@@ -31,7 +31,7 @@
 
         <ScrollViewer Grid.Row="2">
             <StackPanel Orientation="Vertical" Spacing="6">
-                <uc:MixerChannelControl x:Name="MixerChannelContainer"/>
+                <Grid Name="MixerChannelControlContainer"/>
                 <ComboBox x:Name="devicesComboBox" HorizontalAlignment="Center" DropDownOpened="devicesComboBox_DropDownOpened" PlaceholderForeground="White" PlaceholderText="Add" SelectionChanged="devicesComboBox_SelectionChanged"></ComboBox>
             </StackPanel>
         </ScrollViewer>

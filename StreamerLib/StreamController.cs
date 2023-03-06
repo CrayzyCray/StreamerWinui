@@ -40,16 +40,16 @@ namespace StreamerLib
             set => _encoder = value;
         }
         
-        public bool AudioRecording
+        public bool AudioCapturing
         {
-            get => _audioRecording;
-            set => _audioRecording = value;
+            get => _audioCapturing;
+            set => _audioCapturing = value;
         }
         
-        public bool VideoRecording
+        public bool VideoCapturing
         {
-            get => _videoRecording;
-            set => _videoRecording = value;
+            get => _videoCapturing;
+            set => _videoCapturing = value;
         }
 
         public Size CropResolution
@@ -59,9 +59,10 @@ namespace StreamerLib
         }
 
         public MMDevice MMDevice { get; set; }
+        public StreamWriter StreamWriter { get; }
         
-        private bool _videoRecording;
-        private bool _audioRecording;
+        private bool _videoCapturing;
+        private bool _audioCapturing;
         private bool _streamIsActive;
         private int _framerate = 0;
         private Size _cropResolution;
@@ -107,25 +108,26 @@ namespace StreamerLib
             if (_cropResolution != Size.Empty)
                 parameters.Add("video_size=" + _cropResolution.Width + "x" + _cropResolution.Height);
 
-            if (parameters.Count > 0)
-            {
-                string str = parameters.First();
+            if (parameters.Count == 0)
+                return string.Empty;
 
-                if (parameters.Count >= 2)
-                {
-                    str += ":" + parameters[1];
-                    if (parameters.Count > 2)
-                        for (int i = 2; i < parameters.Count; i++)
-                            str += "," + parameters[i];
-                }
+            string str = parameters.First();
+
+            if (parameters.Count == 1)
                 return str;
-            }
-            return string.Empty;
+
+            str += ":" + parameters[1];
+
+            if (parameters.Count > 2)
+                for (int i = 2; i < parameters.Count; i++)
+                    str += "," + parameters[i];
+
+            return str;
         }
 
         private void Validate()
         {
-            if (!_audioRecording) 
+            if (!_audioCapturing) 
                 throw new Exception("Nothing set to record");
             if (MMDevice == null)
                 throw new Exception("MMDevice not set");

@@ -12,7 +12,8 @@
     mc:Ignorable="d">
 
     <Grid Height="70" Width="352" CornerRadius="6" Background="#6000">
-        <canvas:CanvasControl Name="VolumeCanvas" Draw="Canvas_Draw"></canvas:CanvasControl>
+
+        <canvas:CanvasControl x:Name="VolumeCanvas" Draw="Canvas_Draw"></canvas:CanvasControl>
 
         <Grid Padding="6">
             <TextBlock
@@ -36,6 +37,7 @@
                 FontSize="12"/>
             <Slider  
                 Name="VolumeSlider" 
+                Value="100"
                 Margin="8 0 48 0" 
                 Orientation="Horizontal" 
                 VerticalAlignment="Bottom" 

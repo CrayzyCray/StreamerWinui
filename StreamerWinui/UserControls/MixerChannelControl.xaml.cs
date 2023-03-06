@@ -3,15 +3,18 @@ using NAudio.CoreAudioApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace StreamerWinui.UserControls
 {
     public sealed partial class MixerChannelControl : UserControl
     {
-        List<MixerChannel> _devices = new();
+        private List<MixerChannel> _devices = new();
+        private StreamerLib.MasterChannel _masterChannel;
 
-        public MixerChannelControl()
+        public MixerChannelControl(StreamerLib.StreamWriter streamWriter)
         {
+            //_masterChannel = new(streamWriter, StreamerLib.Encoders.LibOpus);
             this.InitializeComponent();
         }
 

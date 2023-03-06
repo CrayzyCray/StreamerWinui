@@ -21,4 +21,10 @@
     <PackageReference Include="NAudio.Core" Version="2.1.0" />
     <PackageReference Include="NAudio.Wasapi" Version="2.1.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="DLLs\Dll.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
