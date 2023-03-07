@@ -6,15 +6,15 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamerWinui", "StreamerWinui\StreamerWinui.csproj", "{DC2A7342-BE4E-4C7F-AE95-FC390885091C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamerLib", "StreamerLib\StreamerLib.csproj", "{BAB5BEC7-CBD1-47E4-81F8-AC4026698A43}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA7438C0-12F4-4637-A8DF-4D850496C37C} = {EA7438C0-12F4-4637-A8DF-4D850496C37C}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Win2DTest", "Win2DTest\Win2DTest.csproj", "{08996D69-F30F-4DC8-95D4-FFC7ECD2032A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cpp", "cpp", "{628EAA11-43DF-48F7-A7DF-FE9E5BA6291B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{39FBB83A-A04C-4A0A-8E88-40270E10C88F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{EA7438C0-12F4-4637-A8DF-4D850496C37C} = {EA7438C0-12F4-4637-A8DF-4D850496C37C}
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{39FBB83A-A04C-4A0A-8E88-40270E10C88F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0791E4D7-EFF8-4E84-AD37-5B1470E76708}"
 EndProject

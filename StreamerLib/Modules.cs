@@ -1,10 +1,11 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using FFmpeg.AutoGen.Abstractions;
-using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
+﻿//using FFmpeg.AutoGen.Abstractions;
+//using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
+
+using System.Collections;
 
 namespace StreamerLib
 {
+    /*
     public unsafe struct Ddagrab : IDisposable
     {
         public AVInputFormat* inputFormat;
@@ -84,6 +85,7 @@ namespace StreamerLib
                     ffmpeg.av_frame_free(p);
         }
     }
+    */
     
     public class AudioBufferSlicer
     {
@@ -277,6 +279,7 @@ namespace StreamerLib
         public ByteBuffer(int size) => _buffer = new byte[size];
     }
 
+    /*
     public unsafe struct HardwareEncoder : IDisposable
     {
         public AVCodec* codec;
@@ -331,25 +334,25 @@ namespace StreamerLib
                 ffmpeg.av_packet_free(p);
         }
     }
+    */
     
     public unsafe class AudioEncoder : IDisposable
     {
-        public int SampleSizeInBytes { get; }
+        public int SampleSizeInBytes { get; } = 4;
         public int FrameSizeInSamples { get; }
         public int FrameSizeInBytes { get; }
         public int Channels { get; }
         public int StreamIndex { get; }
         public int SampleRate => _sampleRate;
-        public AVSampleFormat SampleFormat => _sampleFormat;
-        
-        private AVFrame* _avFrame;
-        private AVCodecContext* _codecContext;
-        private AVPacket* _packet;
+        public FFmpeg.AutoGen.Abstractions.AVSampleFormat SampleFormat => FFmpeg.AutoGen.Abstractions.AVSampleFormat.AV_SAMPLE_FMT_FLT;
+
+        private IntPtr _codecContext;
+        private IntPtr _avFrame;
+        private IntPtr _packet;
         private StreamWriter _streamWriter;
-        private long _pts;
-        private AVRational _timebase;
-        private AVCodecParameters* _codecParameters;
-        private AVSampleFormat _sampleFormat;
+        private long _pts = 0;
+        private IntPtr _timebase;
+        private IntPtr _codecParameters;
         private int _sampleRate;
 
         public AudioEncoder(StreamWriter streamWriter, Encoders encoder, int channels = 2)
@@ -359,66 +362,89 @@ namespace StreamerLib
                 Encoders.LibOpus => "libopus",
                 _ => "libopus"
             };
-            
-            SampleSizeInBytes = 4; //recorder specified
+
             _sampleRate = 48000; //encoder specified
             Channels = channels;
-            _sampleFormat = AVSampleFormat.AV_SAMPLE_FMT_FLT;
-            
-            AVCodec* codec = ffmpeg.avcodec_find_encoder_by_name(encoderName);
-            _codecContext = ffmpeg.avcodec_alloc_context3(codec);
-            _codecContext->sample_rate = _sampleRate;
-            _codecContext->sample_fmt = _sampleFormat;
-            ffmpeg.av_channel_layout_default(&_codecContext->ch_layout, channels);
-            ffmpeg.avcodec_open2(_codecContext, codec, null);
-            
-            FrameSizeInSamples = _codecContext->frame_size;
-            FrameSizeInBytes = FrameSizeInSamples * channels * SampleSizeInBytes;
-            
-            _packet = ffmpeg.av_packet_alloc();
-            _timebase = new AVRational() { num = 1, den = _sampleRate };
-            
-            _codecParameters = ffmpeg.avcodec_parameters_alloc();
-            ffmpeg.avcodec_parameters_from_context(_codecParameters, _codecContext);
-            
-            
-            _avFrame = ffmpeg.av_frame_alloc();
-            _avFrame->nb_samples = FrameSizeInSamples;
-            ffmpeg.av_channel_layout_default(&_avFrame->ch_layout, channels);
-            _avFrame->format = (int)SampleFormat;
+
+            int frameSizeInSamples = -1;
+            nint codecContext, packet, timebase, codecParameters, frame;
+
+            FFmpegImport.AudioEncoder_Constructor(
+                encoderName,
+                48000,
+                channels,
+                &frameSizeInSamples,
+                &codecContext,
+                &packet,
+                &timebase,
+                &codecParameters,
+                &frame);
+
+            _codecContext = codecContext;
+            _packet = packet;
+            _timebase = timebase;
+            _codecParameters = codecParameters;
+            _avFrame = frame;
+
+            FrameSizeInSamples = frameSizeInSamples;
+            FrameSizeInBytes = frameSizeInSamples * channels * SampleSizeInBytes;
             
             _streamWriter = streamWriter;
             StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
         }
 
+        public void Test()
+        {
+            nint c;
+            FFmpegImport.Test(&c);
+            FFmpegImport.PrintCodecLongName(c);
+        }
+
         public void EncodeAndWriteFrame(ArraySegment<byte> buffer)
         {
-            fixed(byte* buf = &buffer.Array[buffer.Offset])
-                ffmpeg.avcodec_fill_audio_frame(_avFrame, Channels, SampleFormat, buf, FrameSizeInBytes, 1);
-            _avFrame->pts = _pts;
-            ffmpeg.avcodec_send_frame(_codecContext, _avFrame);
-            
-            if (ffmpeg.avcodec_receive_packet(_codecContext, _packet) == 0)
-            {
-                _packet->stream_index = StreamIndex;
-                _streamWriter.WriteFrame(_packet, _timebase);
-                ffmpeg.av_packet_unref(_packet);
-            }
+            bool success;
+            fixed (byte* buf = &buffer.Array[buffer.Offset])
+                 success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
+                    buf, 
+                    FrameSizeInBytes, 
+                    Channels,
+                    StreamIndex,
+                    _pts,
+                    _codecContext, 
+                    _packet, 
+                    _avFrame);
 
-            _pts += _codecContext->frame_size;
+            if (success)
+                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
+
+            _pts += FrameSizeInSamples;
+            //fixed(byte* buf = &buffer.Array[buffer.Offset])
+            //    ffmpeg.avcodec_fill_audio_frame(_avFrame, Channels, SampleFormat, buf, FrameSizeInBytes, 1);
+            //_avFrame->pts = _pts;
+            //ffmpeg.avcodec_send_frame(_codecContext, _avFrame);
+
+            //if (ffmpeg.avcodec_receive_packet(_codecContext, _packet) == 0)
+            //{
+            //    _packet->stream_index = StreamIndex;
+            //    _streamWriter.WriteFrame(_packet, _timebase);
+            //    ffmpeg.av_packet_unref(_packet);
+            //}
+
+            //_pts += _codecContext->frame_size;
         }
 
         public void Dispose()
         {
-            ffmpeg.av_packet_unref(_packet);
-            ffmpeg.avcodec_send_packet(_codecContext, _packet);//flush codecContext
-            fixed (AVCodecContext** p = &_codecContext)
-                ffmpeg.avcodec_free_context(p);
-            fixed(AVPacket** p = &_packet)
-                ffmpeg.av_packet_free(p);
+            FFmpegImport.AudioEncoder_Dispose(
+                _packet, 
+                _avFrame, 
+                _codecContext, 
+                _codecParameters, 
+                _timebase);
         }
     }
 
+    /*
     /// Not implemented
     public unsafe struct PixelFormatConverter
     {
@@ -465,6 +491,7 @@ namespace StreamerLib
             //response = ffmpeg.avfilter_graph_config(pixFmtConv->filterGraph, null);
         }
     }
+    */
 
     public struct Codec
     {
@@ -501,6 +528,7 @@ namespace StreamerLib
         Video
     }
 
+    /*
     public static class FFmpegHelper
     {
         public static unsafe void ErrStrPrint(int errNum)
@@ -532,6 +560,7 @@ namespace StreamerLib
         static void SetFfmpegBinaresPath(string path) =>
             DynamicallyLoadedBindings.LibrariesPath = path; 
     }
+    */
 }
 
 //hwframes

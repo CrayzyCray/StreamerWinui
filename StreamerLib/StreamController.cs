@@ -68,8 +68,8 @@ namespace StreamerLib
         private Size _cropResolution;
         private Encoders _encoder;
         private double _resolutionMultiplyer = 1;
-        private Ddagrab _ddagrab;
-        private HardwareEncoder _hardwareEncoder;
+        //private Ddagrab _ddagrab;
+        //private HardwareEncoder _hardwareEncoder;
         private AudioRecorder _audioRecorder;
         private StreamWriter _streamWriter = new();
         private MasterChannel _masterChannel;
@@ -93,7 +93,7 @@ namespace StreamerLib
 
         public StreamController()
         {
-            FFmpegHelper.InicializeFFmpeg();
+            //FFmpegHelper.InicializeFFmpeg();
         }
 
         public bool AddClient(IPAddress ipAddress, int port = StreamWriter.DefaultPort) => _streamWriter.AddClient(ipAddress, port);
