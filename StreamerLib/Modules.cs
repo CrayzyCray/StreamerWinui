@@ -404,9 +404,10 @@ namespace StreamerLib
         {
             bool success;
             fixed (byte* buf = &buffer.Array[buffer.Offset])
+            {
                  success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
-                    buf, 
-                    FrameSizeInBytes, 
+                    buf,
+                    FrameSizeInBytes,
                     Channels,
                     StreamIndex,
                     _pts,
@@ -414,8 +415,9 @@ namespace StreamerLib
                     _packet, 
                     _avFrame);
 
-            if (success)
-                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
+                if (success)
+                    _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
+            }
 
             _pts += FrameSizeInSamples;
             //fixed(byte* buf = &buffer.Array[buffer.Offset])

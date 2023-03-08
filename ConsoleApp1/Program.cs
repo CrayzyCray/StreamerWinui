@@ -1,4 +1,5 @@
-﻿using StreamerLib;
+﻿using NAudio.CoreAudioApi;
+using StreamerLib;
 using System.Threading.Channels;
 
 unsafe internal partial class ConsoleApp1
@@ -8,10 +9,15 @@ unsafe internal partial class ConsoleApp1
         //AudioEncoder audioEncoder = new(new StreamerLib.StreamWriter(), Encoders.LibOpus);
         //audioEncoder.Test();
 
-        TestStruct s = new TestStruct();
-        s.A = 145;
-        s.B = 209;
+        MMDevice device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
 
-        FFmpegImport.TestStructs(s);
+        StreamController streamController = new StreamController();
+
+        streamController.MMDevice = device;
+        streamController.AudioCapturing = true;
+        streamController.StartStream();
+        streamController.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
+        Thread.Sleep(20000);
+        streamController.StopStream();
     }
 }

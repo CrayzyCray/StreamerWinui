@@ -39,19 +39,74 @@ DllExport int AudioEncoder_Constructor(
     AVCodecParameters* codecParameters = avcodec_parameters_alloc();
     avcodec_parameters_from_context(codecParameters, codecContext);
 
+    *FrameSizeInSamples = codecContext->frame_size;
     AVFrame* avFrame = av_frame_alloc();
-    avFrame->nb_samples = FrameSizeInSamples;
+    avFrame->nb_samples = *FrameSizeInSamples;
     av_channel_layout_default(&avFrame->ch_layout, channels);
     avFrame->format = AV_SAMPLE_FMT_FLT;
 
     AVRational timebase = (AVRational){ 1, _sampleRate };
     
-    *FrameSizeInSamples = codecContext->frame_size;
     *codecContextOut = codecContext;
     *packetOut = av_packet_alloc();
     *timebaseOut = &timebase;
     *codecParametersOut = codecParameters;
     *avFrameOut = avFrame;
+}
+
+DllExport bool AudioEncoder_EncodeAndWriteFrame(
+    byte* buffer, 
+    int frameSizeInBytes,
+    int channels,
+    int streamIndex,
+    long pts,
+    AVCodecContext* codecContext,
+    AVPacket* packet,
+    AVFrame* frame)
+{
+    printf("\nAudioEncoder_EncodeAndWriteFrame\n");
+    int ret;
+    av_packet_unref(packet);
+    //av_frame_unref(frame);
+    //frame->nb_samples = codecContext->frame_size;
+    frame->pts = pts;
+    //av_channel_layout_default(&frame->ch_layout, channels);
+
+    printf("%d\n", frame->nb_samples);
+    printf("fill parameters: frame=%p channels=%d buffer=%p frameSize=%d\n", frame, channels, buffer, frameSizeInBytes);
+
+    ret = avcodec_fill_audio_frame(frame, channels, AV_SAMPLE_FMT_FLT, buffer, frameSizeInBytes, 1);
+    if (ret < 0)
+    {
+        printf("fill error: ");
+        PrintAVError(ret);
+    }
+
+    ret = avcodec_send_frame(codecContext, frame);
+    if (ret < 0)
+    {
+        printf("send error: ");
+        PrintAVError(ret);
+    }
+
+    printf("frame pts = %d\n", pts);
+
+    ret = avcodec_receive_packet(codecContext, packet);
+    if (ret < 0)
+    {
+        printf("recieve error: ");
+        PrintAVError(ret);
+    }
+
+    if (ret == 0)
+    {
+
+        packet->stream_index = streamIndex;
+        printf("packet pts = %d\n", packet->pts);
+        return true;
+    }
+
+    return false;
 }
 
 DllExport int AudioEncoder_Dispose(
@@ -67,29 +122,6 @@ DllExport int AudioEncoder_Dispose(
     av_packet_free(&packet);
     av_frame_free(&frame);
     avcodec_parameters_free(&codecParameters);
-}
-
-DllExport bool AudioEncoder_EncodeAndWriteFrame(
-    byte* buffer, 
-    int frameSizeInBytes,
-    int channels,
-    int streamIndex,
-    long pts,
-    AVCodecContext* codecContext,
-    AVPacket* packet,
-    AVFrame* frame)
-{
-    av_packet_unref(packet);
-    av_frame_unref(frame);
-    avcodec_fill_audio_frame(frame, channels, AV_SAMPLE_FMT_FLT, buffer, frameSizeInBytes, 1);
-    frame->pts = pts;
-    avcodec_send_frame(codecContext, frame);
-    packet->stream_index = streamIndex;
-
-    if (avcodec_receive_packet(codecContext, packet) == 0)
-        return true;
-
-    return false;
 }
 
 DllExport int StreamWriter_AddClient(
@@ -150,7 +182,7 @@ DllExport int StreamWriter_AddClientAsFile(
 DllExport int StreamWriter_DeleteAllClients(AVFormatContext* formatContext)
 {
     av_write_trailer(formatContext);
-    avio_closep(&formatContext);
+    avio_closep(&formatContext->pb);
     avformat_free_context(formatContext);
 }
 
@@ -158,10 +190,11 @@ DllExport int StreamWriter_WriteFrame(
     AVPacket* packet, 
     AVRational* packetTimebase, 
     AVRational* streamTimebase, 
-    AVFormatContext* formatContexts[])
+    AVFormatContext *formatContexts[])
 {
     av_packet_rescale_ts(packet, *packetTimebase, *streamTimebase);
     int length = sizeof(formatContexts) / sizeof(formatContexts[0]);
+    printf("\nStreamWriter_WriteFrame\nClients: %d", length);
     for (int i = 0; i < length; i++)
     {
         int ret = av_write_frame(formatContexts[i], packet);
@@ -179,6 +212,14 @@ struct TestStruct
     int A;
     int B;
 };
+
+inline int PrintAVError(int errnum)
+{
+    char str[64];
+    av_strerror(errnum, &str, 64);
+    printf(str);
+    printf("\n");
+}
 
 DllExport int TestStructs(struct TestStruct s)
 {

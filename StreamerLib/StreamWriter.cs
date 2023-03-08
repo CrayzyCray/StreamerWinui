@@ -15,7 +15,7 @@ namespace StreamerLib
         public int AddAvStream(nint codecParameters, nint timebase)
         {
             Array.Resize(ref _streamParameters, _streamParameters.Length + 1);
-            _streamParameters[_streamParameters.Length] = new StreamParameters { CodecParameters = codecParameters, Timebase = timebase };
+            _streamParameters[_streamParameters.Length-1] = new StreamParameters { CodecParameters = codecParameters, Timebase = timebase };
 
             return _streamParameters.Length - 1; //this is a StreamIndex
         }
