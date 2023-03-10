@@ -338,13 +338,14 @@ namespace StreamerLib
     
     public unsafe class AudioEncoder : IDisposable
     {
+        public const int AV_SAMPLE_FMT_FLT = 3;
         public int SampleSizeInBytes { get; } = 4;
         public int FrameSizeInSamples { get; }
         public int FrameSizeInBytes { get; }
         public int Channels { get; }
         public int StreamIndex { get; }
         public int SampleRate => _sampleRate;
-        public FFmpeg.AutoGen.Abstractions.AVSampleFormat SampleFormat => FFmpeg.AutoGen.Abstractions.AVSampleFormat.AV_SAMPLE_FMT_FLT;
+        public int SampleFormat => AV_SAMPLE_FMT_FLT;
 
         private IntPtr _codecContext;
         private IntPtr _avFrame;

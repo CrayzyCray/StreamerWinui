@@ -2,6 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
+using StreamerLib;
 using System;
 
 namespace StreamerWinui.UserControls
@@ -10,26 +11,24 @@ namespace StreamerWinui.UserControls
     {
         public const double MinimumVolumeMeterLevelDbfs = -62;
 
-        public MMDevice Device { get; }
+        public WasapiAudioCapturingChannel WasapiAudioCapturingChannel { get; }
+        public MMDevice Device => WasapiAudioCapturingChannel.MMDevice;
         public event EventHandler OnDeleting;
-        private WasapiCapture _audioCapture;
         const int _width = 352;
         const int _height = 70;
 
-        public MixerChannel(MMDevice mmDevice)
+        public MixerChannel(MMDevice mmDevice, int id, int frameSizeInBytes)
         {
             if (mmDevice.DataFlow == DataFlow.All)
                 throw new Exception("Wrong mmDevice.DataFlow");
 
-            _audioCapture = (mmDevice.DataFlow == DataFlow.Capture)
-                ? new WasapiCapture(mmDevice)
-                : new WasapiLoopbackCapture(mmDevice);
+            WasapiAudioCapturingChannel = new(mmDevice, id, frameSizeInBytes);
+            WasapiAudioCapturingChannel.StartRecording();
+            WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
 
-            Device = mmDevice;
             this.InitializeComponent();
-            _audioCapture.StartRecording();
-            _audioCapture.DataAvailable += _captureDataRecieved;
-            DeviceNameTextBlock.Text = mmDevice.FriendlyName;
+
+            DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
         }
 
         public void SetVolumeMeterLevel(double dbfs)
@@ -57,11 +56,9 @@ namespace StreamerWinui.UserControls
             SetVolumeMeterLevel(dbfs);
         }
 
-        public MixerChannel() => this.InitializeComponent();
-
         private void DeleteButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            _audioCapture.Dispose();
+            WasapiAudioCapturingChannel.StopRecording();
             OnDeleting.Invoke(this, null);
         }
 
@@ -82,7 +79,7 @@ namespace StreamerWinui.UserControls
 
         public void Dispose()
         {
-            _audioCapture.Dispose();
+            WasapiAudioCapturingChannel.StopRecording();
         }
     }
 }

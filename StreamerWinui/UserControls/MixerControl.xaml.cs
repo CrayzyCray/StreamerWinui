@@ -1,39 +1,40 @@
 using Microsoft.UI.Xaml.Controls;
 using NAudio.CoreAudioApi;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace StreamerWinui.UserControls
 {
-    public sealed partial class MixerChannelControl : UserControl
+    public sealed partial class MixerControl : UserControl
     {
         private List<MixerChannel> _devices = new();
         private StreamerLib.MasterChannel _masterChannel;
 
-        public MixerChannelControl(StreamerLib.StreamWriter streamWriter)
+        public MixerControl(StreamerLib.StreamWriter streamWriter)
         {
-            //_masterChannel = new(streamWriter, StreamerLib.Encoders.LibOpus);
+            _masterChannel = new(streamWriter, StreamerLib.Encoders.LibOpus);
             this.InitializeComponent();
         }
 
-        public void AddChannel(MixerChannel mixerChannel)
+        public void AddChannel(MMDevice device)
         {
+            MixerChannel mixerChannel = new(device, _masterChannel.GetNewID(), _masterChannel.FrameSizeInBytes);
+            _masterChannel.AddChannel(mixerChannel.WasapiAudioCapturingChannel);
             StackPanel.Children.Add(mixerChannel);
             _devices.Add(mixerChannel);
 
-            mixerChannel.OnDeleting += (s, e) =>
-            {
-                StackPanel.Children.Remove(mixerChannel);
-                _devices.Remove(mixerChannel);
-            };
+            mixerChannel.OnDeleting += MixerChannel_OnDeleting;
+        }
+
+        private void MixerChannel_OnDeleting(object sender, System.EventArgs e)
+        {
+            StackPanel.Children.Remove(sender as MixerChannel);
+            _devices.Remove(sender as MixerChannel);
         }
 
         public List<MMDevice> GetAvalibleDevices()
         {
             var allDevices = new MMDeviceEnumerator().EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active);
-            var avalibleDevices = new List<MMDevice>();
+            var availableDevices = new List<MMDevice>();
 
             for (int i = 0; i < allDevices.Count; i++)
             {
@@ -47,10 +48,10 @@ namespace StreamerWinui.UserControls
                     }
                 }
                 if (b)
-                    avalibleDevices.Add(allDevices[i]);
+                    availableDevices.Add(allDevices[i]);
             }
 
-            return avalibleDevices;
+            return availableDevices;
         }
 
         public void Dispose()
@@ -58,6 +59,11 @@ namespace StreamerWinui.UserControls
             StackPanel.Children.Clear();
             _devices.ForEach(d=>d.Dispose());
             _devices.Clear();
+        }
+
+        public void StartStreaming()
+        {
+
         }
     }
 }

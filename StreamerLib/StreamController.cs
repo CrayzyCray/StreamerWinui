@@ -1,15 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using NAudio.CoreAudioApi;
 using System.Drawing;
-using System.IO;
-using System.Linq;
 using System.Net;
-using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
-using FFmpeg.AutoGen.Abstractions;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using NAudio.CoreAudioApi;
 
 namespace StreamerLib
 {
@@ -70,13 +61,12 @@ namespace StreamerLib
         private double _resolutionMultiplyer = 1;
         //private Ddagrab _ddagrab;
         //private HardwareEncoder _hardwareEncoder;
-        private AudioRecorder _audioRecorder;
         private StreamWriter _streamWriter = new();
         private MasterChannel _masterChannel;
 
         public void StartStream()
         {
-            Validate();
+            ValidateParameters();
             
             _streamIsActive = true;
             
@@ -125,7 +115,7 @@ namespace StreamerLib
             return str;
         }
 
-        private void Validate()
+        private void ValidateParameters()
         {
             if (!_audioCapturing) 
                 throw new Exception("Nothing set to record");

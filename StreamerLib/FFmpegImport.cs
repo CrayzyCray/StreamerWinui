@@ -1,5 +1,4 @@
-﻿using FFmpeg.AutoGen.Abstractions;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using static StreamerLib.StreamWriter;
 
 namespace StreamerLib

@@ -16,8 +16,6 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
-    <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="5.1.1.1" />
-    <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="5.1.1.1" />
     <PackageReference Include="NAudio.Core" Version="2.1.0" />
     <PackageReference Include="NAudio.Wasapi" Version="2.1.0" />
   </ItemGroup>

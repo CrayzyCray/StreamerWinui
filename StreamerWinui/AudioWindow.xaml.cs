@@ -19,7 +19,7 @@ namespace StreamerWinui
     {
         private AppWindow m_AppWindow;
         private StreamerLib.StreamController _streamController = new();
-        private MixerChannelControl _mixerChannelControl;
+        private MixerControl _mixerChannelControl;
 
         public readonly SizeInt32 DefaultWindowSize = new SizeInt32(380, 500);
 
@@ -38,6 +38,7 @@ namespace StreamerWinui
             DotNetTextBlock.Text = ".NET " + Environment.Version;
 
             FillDevicesComboBox();
+            Closed += WindowClosed;
         }
 
         public void FillDevicesComboBox() => devicesComboBox.ItemsSource = _mixerChannelControl.GetAvalibleDevices();
@@ -52,15 +53,7 @@ namespace StreamerWinui
             _mixerChannelControl = new(_streamController.StreamWriter);
             MixerChannelControlContainer.Children.Add(_mixerChannelControl);
         }
-
-        private void PrintDebugInfo()
-        {
-            Debug.WriteLine(".NET " + Environment.Version.ToString());
-
-            if (AppWindowTitleBar.IsCustomizationSupported())
-                Debug.WriteLine("AppTitleBar customization is supported");
-        }
-
+        
         private Microsoft.UI.Composition.SystemBackdrops.MicaController m_micaController;
         private Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration m_configurationSource;
 
@@ -74,7 +67,6 @@ namespace StreamerWinui
             // Hooking up the policy object
             m_configurationSource = new Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration();
             Activated += WindowActivated;
-            Closed += WindowClosed;
             ((FrameworkElement)this.Content).ActualThemeChanged += WindowThemeChanged;
 
             // Initial configuration state.
@@ -96,10 +88,7 @@ namespace StreamerWinui
             if (_mixerChannelControl != null)
                 _mixerChannelControl.Dispose();
             if (m_micaController != null)
-            {
                 m_micaController.Dispose();
-                m_micaController = null;
-            }
             this.Activated -= WindowActivated;
             m_configurationSource = null;
         }
@@ -140,14 +129,12 @@ namespace StreamerWinui
 
         private void devicesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if(devicesComboBox.SelectedItem is MMDevice device)
-            {
-                var m = new MixerChannel(device);
-                _mixerChannelControl.AddChannel(m);
-                devicesComboBox.SelectedIndex = -1;
-            }
-            //FillDevicesComboBox();
-            //devicesComboBox.ItemsSource = Array.Empty<MMDevice>();
+            //if(devicesComboBox.SelectedItem is MMDevice device)
+            //{
+            //    var m = new MixerChannel(device);
+            //    _mixerChannelControl.AddChannel(m);
+            //    devicesComboBox.SelectedIndex = -1;
+            //}
         }
     }
 }

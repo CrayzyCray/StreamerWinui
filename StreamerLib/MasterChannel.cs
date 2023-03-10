@@ -11,6 +11,8 @@ namespace StreamerLib
 
         public List<WasapiAudioCapturingChannel> WasapiAudioChannels => _wasapiAudioChannels;
         public int FrameSizeInBytes => _audioEncoder.FrameSizeInBytes;
+        public StreamWriter StreamWriter { get; }
+        public Encoders Encoder { get; }
 
         private AudioEncoder _audioEncoder;
         private int _channelIdPointer = 0;
@@ -18,6 +20,8 @@ namespace StreamerLib
 
         public MasterChannel(StreamWriter streamWriter, Encoders encoder)
         {
+            StreamWriter = streamWriter;
+            Encoder = encoder;
             _audioEncoder = new(streamWriter, encoder);
         }
 
@@ -76,7 +80,7 @@ namespace StreamerLib
         public int ChannelID { get; }
         public float Volume { get; set; } = DefaultVolume;
         public Queue<ArraySegment<byte>> Buffers => _buffersQueue;
-        public event EventHandler DataAvailable;
+        public event EventHandler<WaveInEventArgs> DataAvailable;
 
         private AudioBufferSlicer _audioBufferSlicer;
         private WasapiCapture _wasapiCapture;
@@ -112,7 +116,7 @@ namespace StreamerLib
                     _buffersQueue.Clear();
                 foreach (var item in buffersList)
                     _buffersQueue.Enqueue(item);
-                DataAvailable.Invoke(this, null);
+                DataAvailable.Invoke(this, e);
             };
         }
 
