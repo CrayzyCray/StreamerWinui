@@ -19,6 +19,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using System.Threading;
+using System.Diagnostics;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -32,6 +33,11 @@ namespace Win2DTest
     {
         public MainWindow()
         {
+            if (File.Exists("cmd.exe"))
+            {
+                Debug.WriteLine($"{Directory.GetCurrentDirectory()}");
+            }
+
             this.InitializeComponent();
         }
 

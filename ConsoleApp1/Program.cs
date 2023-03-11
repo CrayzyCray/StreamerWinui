@@ -8,6 +8,11 @@ unsafe internal partial class ConsoleApp1
     {
         //AudioEncoder audioEncoder = new(new StreamerLib.StreamWriter(), Encoders.LibOpus);
         //audioEncoder.Test();
+        if (File.Exists("Dlls/Dll.dll"))
+        {
+            FFmpegImport.Here();
+
+        }
 
         MMDevice device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
 

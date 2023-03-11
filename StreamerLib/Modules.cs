@@ -1,7 +1,4 @@
-﻿//using FFmpeg.AutoGen.Abstractions;
-//using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
-
-using System.Collections;
+﻿using System.Collections;
 
 namespace StreamerLib
 {
@@ -196,12 +193,12 @@ namespace StreamerLib
     public class Buffer<T>
     {
         public T[] InternalArray => _buffer;
-        public int Count => _nextElementPointer;
+        public int Buffered => _nextElementPointer;
         public int Size => _buffer.Length;
-        public int SizeRemain => Size - Count;
-        public bool IsEmpty => Count == 0;
-        public bool NotEmpty => Count != 0;
-        public bool IsFull => Count == Size;
+        public int SizeRemain => Size - Buffered;
+        public bool IsEmpty => Buffered == 0;
+        public bool NotEmpty => Buffered != 0;
+        public bool IsFull => Buffered == Size;
         public void clear() => _nextElementPointer = 0;
 
         public ref T this[int Index] => ref _buffer[Index];
@@ -339,6 +336,7 @@ namespace StreamerLib
     public unsafe class AudioEncoder : IDisposable
     {
         public const int AV_SAMPLE_FMT_FLT = 3;
+
         public int SampleSizeInBytes { get; } = 4;
         public int FrameSizeInSamples { get; }
         public int FrameSizeInBytes { get; }
@@ -392,13 +390,6 @@ namespace StreamerLib
             
             _streamWriter = streamWriter;
             StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
-        }
-
-        public void Test()
-        {
-            nint c;
-            FFmpegImport.Test(&c);
-            FFmpegImport.PrintCodecLongName(c);
         }
 
         public void EncodeAndWriteFrame(ArraySegment<byte> buffer)

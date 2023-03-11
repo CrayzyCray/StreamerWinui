@@ -50,7 +50,7 @@ namespace StreamerLib
         }
 
         public MMDevice MMDevice { get; set; }
-        public StreamWriter StreamWriter { get; }
+        public StreamWriter StreamWriter => _streamWriter;
         
         private bool _videoCapturing;
         private bool _audioCapturing;

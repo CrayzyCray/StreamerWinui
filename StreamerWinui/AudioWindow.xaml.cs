@@ -2,16 +2,10 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using NAudio.CoreAudioApi;
 using StreamerWinui.UserControls;
 using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using Windows.Foundation;
 using Windows.Graphics;
 using WinRT;
-using WinRT.Interop;
 
 namespace StreamerWinui
 {
@@ -21,7 +15,7 @@ namespace StreamerWinui
         private StreamerLib.StreamController _streamController = new();
         private MixerControl _mixerChannelControl;
 
-        public readonly SizeInt32 DefaultWindowSize = new SizeInt32(380, 500);
+        public static readonly SizeInt32 DefaultWindowSize = new(380, 500);
 
         const string DefaultPath = @"D:\\video\\img\\2.opus";
 
@@ -30,6 +24,7 @@ namespace StreamerWinui
             InitializeComponent();
             CreateMixerChannelControl();
             TrySetMicaBackdrop();
+
             m_AppWindow = GetAppWindowForCurrentWindow();
             m_AppWindow.Resize(DefaultWindowSize);
 
@@ -117,7 +112,7 @@ namespace StreamerWinui
 
         private AppWindow GetAppWindowForCurrentWindow()
         {
-            IntPtr hWnd = WindowNative.GetWindowHandle(this);
+            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             WindowId wndId = Win32Interop.GetWindowIdFromWindow(hWnd);
             return AppWindow.GetFromWindowId(wndId);
         }
@@ -129,12 +124,11 @@ namespace StreamerWinui
 
         private void devicesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //if(devicesComboBox.SelectedItem is MMDevice device)
-            //{
-            //    var m = new MixerChannel(device);
-            //    _mixerChannelControl.AddChannel(m);
-            //    devicesComboBox.SelectedIndex = -1;
-            //}
+            if(devicesComboBox.SelectedItem is NAudio.CoreAudioApi.MMDevice device)
+            {
+                _mixerChannelControl.AddChannel(device);
+                devicesComboBox.SelectedIndex = -1;
+            }
         }
     }
 }

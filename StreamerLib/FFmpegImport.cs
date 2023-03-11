@@ -7,14 +7,11 @@ namespace StreamerLib
     {
         const string DllPath = "DLLs/Dll.dll";
 
-        [LibraryImport(DllPath)]
-        public static partial IntPtr AVCodecFindEncoderByName([MarshalAs(UnmanagedType.LPStr)] String encoderName);
+        [DllImport("Dlls/Dll2.dll", EntryPoint = "GetInt")]
+        public extern static int Dll2GetInt();
 
         [LibraryImport(DllPath)]
-        public static partial IntPtr GetNameOfEncoder([MarshalAs(UnmanagedType.LPStr)] String encoderName);
-
-        [LibraryImport(DllPath)]
-        public static partial IntPtr AvCodecAllocContext3(IntPtr avCodec);
+        public static partial int Here();
 
         [LibraryImport(DllPath)]
         public static partial int AudioEncoder_Constructor(
@@ -27,8 +24,6 @@ namespace StreamerLib
             nint* _timebaseOut,
             nint* _codecParametersOut,
             nint* _avFrameOut);
-
-        //[DllImport(DllPath, CallingConvention = CallingConvention.)]
 
         [LibraryImport(DllPath)]
         public static partial int AudioEncoder_Dispose(
@@ -73,20 +68,5 @@ namespace StreamerLib
 
         [LibraryImport(DllPath)]
         public static partial int StreamWriter_DeleteAllClients(nint formatContext);
-
-        [LibraryImport(DllPath)]
-        public static partial int Test(nint* codecContext);
-
-        [LibraryImport(DllPath)]
-        public static partial int TestStructs(TestStruct s);
-
-        [LibraryImport(DllPath)]
-        public static partial int PrintCodecLongName(nint codec);
-    }
-
-    public struct TestStruct
-    {
-        public int A;
-        public int B;
     }
 }

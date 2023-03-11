@@ -237,7 +237,7 @@ DllExport int PrintCodecLongName(AVCodec* codec)
     printf(codec->long_name);
 }
 
-int Here() { printf("\n\nhere\n\n"); }
+DllExport int Here() { printf("\n\nhere\n\n"); }
 
 DllExport char* GetNameOfEncoder(const char* encoderName)
 {
