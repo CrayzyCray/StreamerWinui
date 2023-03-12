@@ -7,9 +7,6 @@ namespace StreamerLib
     {
         const string DllPath = "DLLs/Dll.dll";
 
-        [DllImport("Dlls/Dll2.dll", EntryPoint = "GetInt")]
-        public extern static int Dll2GetInt();
-
         [LibraryImport(DllPath)]
         public static partial int Here();
 
@@ -64,7 +61,8 @@ namespace StreamerLib
             nint packet,
             nint packetTimebase,
             nint streamTimebase,
-            nint[] formatContexts);
+            nint[] formatContexts,
+            int formatContextsCount);
 
         [LibraryImport(DllPath)]
         public static partial int StreamWriter_DeleteAllClients(nint formatContext);

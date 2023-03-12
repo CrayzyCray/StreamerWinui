@@ -13,9 +13,9 @@ namespace StreamerLib
         public int FrameSizeInBytes => _audioEncoder.FrameSizeInBytes;
         public StreamWriter StreamWriter { get; }
         public Encoders Encoder { get; }
+        public MasterChannelState State { get; private set; } = MasterChannelState.Monitoring;
 
         private AudioEncoder _audioEncoder;
-        private int _channelIdPointer = 0;
         private List<WasapiAudioCapturingChannel> _wasapiAudioChannels = new(2);
 
         public MasterChannel(StreamWriter streamWriter, Encoders encoder)
@@ -25,32 +25,50 @@ namespace StreamerLib
             _audioEncoder = new(streamWriter, encoder);
         }
 
-        public void AddChannel(MMDevice mmDevice)
-        {
-            var channel = new WasapiAudioCapturingChannel(mmDevice, GetNewID(), _audioEncoder.FrameSizeInBytes);
-            channel.DataAvailable += RecieveBuffer;
-            _wasapiAudioChannels.Add(channel);
-        }
+        //public void AddChannel(MMDevice mmDevice)
+        //{
+        //    var channel = new WasapiAudioCapturingChannel(mmDevice, _audioEncoder.FrameSizeInBytes);
+        //    channel.DataAvailable += RecieveBuffer;
+        //    _wasapiAudioChannels.Add(channel);
+        //}
 
         public void AddChannel(WasapiAudioCapturingChannel capturingChannel)
         {
-            capturingChannel.DataAvailable += RecieveBuffer;
+            //capturingChannel.DataAvailable += RecieveBuffer;
             _wasapiAudioChannels.Add(capturingChannel);
+        }
+
+        public void RemoveChannel(WasapiAudioCapturingChannel capturingChannel)
+        {
+            if (!_wasapiAudioChannels.Contains(capturingChannel))
+                throw new ArgumentException("MasterChannel not contains this WasapiAudioCapturingChannel");
+
+            capturingChannel.DataAvailable -= RecieveBuffer;
+            _wasapiAudioChannels.Remove(capturingChannel);
         }
 
         public void DeleteAllChannels()
         {
-            _wasapiAudioChannels.ForEach(c => c.StopRecording());
+            Dispose();
             _wasapiAudioChannels.Clear();
         }
 
         public void StartStreaming()
         {
-            _wasapiAudioChannels.ForEach(c => c.StartRecording());
+            foreach (var channel in _wasapiAudioChannels)
+                channel.DataAvailable += RecieveBuffer;
+
+            foreach (var channel in _wasapiAudioChannels)
+                if (channel.CaptureState == CaptureState.Stopped)
+                    channel.StartRecording();
         }
 
         private void RecieveBuffer(object? sender, EventArgs e)
         {
+            if (true)
+            {
+
+            }
             // foreach (var item in _wasapiAudioChannels)
             //     if (item.BufferIsAvailable == false)
             //         return;
@@ -61,12 +79,16 @@ namespace StreamerLib
                 _audioEncoder.EncodeAndWriteFrame(test.ReadNextBuffer());
         }
 
-        public int GetNewID() => ++_channelIdPointer;
-
         public void Dispose()
         {
             _wasapiAudioChannels.ForEach(c => c.StopRecording());
         }
+    }
+
+    public enum MasterChannelState
+    {
+        Monitoring,
+        Streaming
     }
 
     public class WasapiAudioCapturingChannel
@@ -77,10 +99,10 @@ namespace StreamerLib
         public int Channels => _wasapiCapture.WaveFormat.Channels;
         public WaveFormat WaveFormat => _wasapiCapture.WaveFormat;
         public MMDevice MMDevice { get; }
-        public int ChannelID { get; }
         public float Volume { get; set; } = DefaultVolume;
         public Queue<ArraySegment<byte>> Buffers => _buffersQueue;
         public event EventHandler<WaveInEventArgs> DataAvailable;
+        public CaptureState CaptureState => _wasapiCapture.CaptureState;
 
         private AudioBufferSlicer _audioBufferSlicer;
         private WasapiCapture _wasapiCapture;
@@ -95,29 +117,30 @@ namespace StreamerLib
             return _buffersQueue.Dequeue();
         }
 
-        public WasapiAudioCapturingChannel(MMDevice mmDevice, int channelID, int frameSizeInBytes)
+        public WasapiAudioCapturingChannel(MMDevice mmDevice, int frameSizeInBytes)
         {
             if (mmDevice.DataFlow == DataFlow.All)
                 throw new Exception("Wrong mmDevice.DataFlow");
             MMDevice = mmDevice;
-            ChannelID = channelID;
             _wasapiCapture = (mmDevice.DataFlow == DataFlow.Capture)
                 ? new WasapiCapture(mmDevice)
                 : new WasapiLoopbackCapture(mmDevice);
             _audioBufferSlicer = new AudioBufferSlicer(frameSizeInBytes);
 
-            _wasapiCapture.DataAvailable += (s, e) =>
-            {
-                if (Volume != 1f)
-                    ApplyVolume(e.Buffer, e.BytesRecorded, Volume);
+            _wasapiCapture.DataAvailable += _wasapiCapture_DataAvailable;
+        }
 
-                var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(e.Buffer, e.BytesRecorded);
-                if (_buffersQueue.Count + buffersList.Count > QueueCapacity)
-                    _buffersQueue.Clear();
-                foreach (var item in buffersList)
-                    _buffersQueue.Enqueue(item);
-                DataAvailable.Invoke(this, e);
-            };
+        private void _wasapiCapture_DataAvailable(object? s, WaveInEventArgs e)
+        {
+            if (Volume != 1f)
+                ApplyVolume(e.Buffer, e.BytesRecorded, Volume);
+
+            var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(e.Buffer, e.BytesRecorded);
+            if (_buffersQueue.Count + buffersList.Count > QueueCapacity)
+                _buffersQueue.Clear();
+            foreach (var item in buffersList)
+                _buffersQueue.Enqueue(item);
+            DataAvailable.Invoke(this, e);
         }
 
         public bool BufferIsAvailable

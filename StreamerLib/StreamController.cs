@@ -49,6 +49,17 @@ namespace StreamerLib
             set => _cropResolution = value;
         }
 
+        public MasterChannel MasterChannel
+        {
+            get
+            {
+                if (_masterChannel == null)
+                    _masterChannel = new MasterChannel(_streamWriter, DefaultAudioEncoder);
+
+                return _masterChannel;
+            }
+        }
+
         public MMDevice MMDevice { get; set; }
         public StreamWriter StreamWriter => _streamWriter;
         
@@ -66,12 +77,13 @@ namespace StreamerLib
 
         public void StartStream()
         {
+            throw new NotImplementedException();
             ValidateParameters();
             
             _streamIsActive = true;
             
-            _masterChannel = new MasterChannel(_streamWriter, Encoders.LibOpus);
-            _masterChannel.AddChannel(MMDevice);
+            _masterChannel = new MasterChannel(_streamWriter, DefaultAudioEncoder);
+            //_masterChannel.AddChannel(MMDevice);
             _masterChannel.StartStreaming();
         }
         

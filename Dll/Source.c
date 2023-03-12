@@ -85,7 +85,7 @@ DllExport bool AudioEncoder_EncodeAndWriteFrame(
     ret = avcodec_send_frame(codecContext, frame);
     if (ret < 0)
     {
-        printf("send error: ");
+        //printf("send error: ");
         PrintAVError(ret);
     }
 
@@ -190,12 +190,14 @@ DllExport int StreamWriter_WriteFrame(
     AVPacket* packet, 
     AVRational* packetTimebase, 
     AVRational* streamTimebase, 
-    AVFormatContext *formatContexts[])
+    AVFormatContext *formatContexts[],
+    int formatContextsCount)
 {
     av_packet_rescale_ts(packet, *packetTimebase, *streamTimebase);
-    int length = sizeof(formatContexts) / sizeof(formatContexts[0]);
-    printf("\nStreamWriter_WriteFrame\nClients: %d", length);
-    for (int i = 0; i < length; i++)
+    Here();
+    //int length = sizeof(formatContexts) / sizeof(formatContexts[0]);
+    printf("\nStreamWriter_WriteFrame\nClients: %d", formatContextsCount);
+    for (int i = 0; i < formatContextsCount; i++)
     {
         int ret = av_write_frame(formatContexts[i], packet);
         if (ret < 0)
@@ -237,7 +239,10 @@ DllExport int PrintCodecLongName(AVCodec* codec)
     printf(codec->long_name);
 }
 
-DllExport int Here() { printf("\n\nhere\n\n"); }
+int Here() 
+{
+    printf("\n\nhere\n\n"); 
+}
 
 DllExport char* GetNameOfEncoder(const char* encoderName)
 {

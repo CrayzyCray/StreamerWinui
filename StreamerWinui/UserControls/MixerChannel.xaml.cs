@@ -17,12 +17,12 @@ namespace StreamerWinui.UserControls
         const int _width = 352;
         const int _height = 70;
 
-        public MixerChannel(MMDevice mmDevice, int id, int frameSizeInBytes)
+        public MixerChannel(MMDevice mmDevice, int frameSizeInBytes)
         {
             if (mmDevice.DataFlow == DataFlow.All)
                 throw new Exception("Wrong mmDevice.DataFlow");
 
-            WasapiAudioCapturingChannel = new(mmDevice, id, frameSizeInBytes);
+            WasapiAudioCapturingChannel = new(mmDevice, frameSizeInBytes);
             WasapiAudioCapturingChannel.StartRecording();
             WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
 

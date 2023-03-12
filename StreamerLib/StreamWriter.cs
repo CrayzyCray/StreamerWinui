@@ -88,7 +88,8 @@ namespace StreamerLib
                 packet,
                 packetTimebase,
                 _streamParameters[streamIndex].Timebase,
-                formatContexts);
+                formatContexts,
+                formatContexts.Length);
 
             return ret;
         }

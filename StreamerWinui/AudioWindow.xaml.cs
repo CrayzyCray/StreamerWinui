@@ -45,7 +45,7 @@ namespace StreamerWinui
 
         private void CreateMixerChannelControl()
         {
-            _mixerChannelControl = new(_streamController.StreamWriter);
+            _mixerChannelControl = new(_streamController);
             MixerChannelControlContainer.Children.Add(_mixerChannelControl);
         }
         

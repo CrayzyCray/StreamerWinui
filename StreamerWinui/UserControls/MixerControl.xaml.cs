@@ -6,21 +6,25 @@ namespace StreamerWinui.UserControls
 {
     public sealed partial class MixerControl : UserControl
     {
+        public StreamerLib.StreamController StreamController { get; }
+
         private List<MixerChannel> _devices = new();
         private StreamerLib.MasterChannel _masterChannel;
 
-        public MixerControl(StreamerLib.StreamWriter streamWriter)
+        public MixerControl(StreamerLib.StreamController streamController)
         {
-            _masterChannel = new(streamWriter, StreamerLib.Encoders.LibOpus);
+            StreamController = streamController;
+            _masterChannel = streamController.MasterChannel;
             this.InitializeComponent();
         }
 
         public void AddChannel(MMDevice device)
         {
-            MixerChannel mixerChannel = new(device, _masterChannel.GetNewID(), _masterChannel.FrameSizeInBytes);
+            MixerChannel mixerChannel = new(device, _masterChannel.FrameSizeInBytes);
             _masterChannel.AddChannel(mixerChannel.WasapiAudioCapturingChannel);
-            StackPanel.Children.Add(mixerChannel);
+
             _devices.Add(mixerChannel);
+            StackPanel.Children.Add(mixerChannel);
 
             mixerChannel.OnDeleting += MixerChannel_OnDeleting;
         }
@@ -29,6 +33,7 @@ namespace StreamerWinui.UserControls
         {
             StackPanel.Children.Remove(sender as MixerChannel);
             _devices.Remove(sender as MixerChannel);
+            _masterChannel.RemoveChannel((sender as MixerChannel).WasapiAudioCapturingChannel);
         }
 
         public List<MMDevice> GetAvalibleDevices()
