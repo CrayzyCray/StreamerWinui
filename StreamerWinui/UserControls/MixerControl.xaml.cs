@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
 using NAudio.CoreAudioApi;
+using System;
 using System.Collections.Generic;
 
 namespace StreamerWinui.UserControls
@@ -13,19 +14,17 @@ namespace StreamerWinui.UserControls
 
         public MixerControl(StreamerLib.StreamController streamController)
         {
+            this.InitializeComponent();
             StreamController = streamController;
             _masterChannel = streamController.MasterChannel;
-            this.InitializeComponent();
         }
 
         public void AddChannel(MMDevice device)
         {
-            MixerChannel mixerChannel = new(device, _masterChannel.FrameSizeInBytes);
-            _masterChannel.AddChannel(mixerChannel.WasapiAudioCapturingChannel);
-
+            var channel = _masterChannel.AddChannel(device);
+            var mixerChannel = new MixerChannel(channel);
             _devices.Add(mixerChannel);
             StackPanel.Children.Add(mixerChannel);
-
             mixerChannel.OnDeleting += MixerChannel_OnDeleting;
         }
 
@@ -68,7 +67,7 @@ namespace StreamerWinui.UserControls
 
         public void StartStreaming()
         {
-
+            throw new NotImplementedException();
         }
     }
 }

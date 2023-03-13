@@ -9,7 +9,7 @@
   <Identity
     Name="a6169862-ebcc-4e77-b511-1921e8e84f34"
     Publisher="CN=Cray"
-    Version="0.0.4.0" />
+    Version="0.0.5.0" />
 
   <Properties>
     <DisplayName>StreamerWinui</DisplayName>

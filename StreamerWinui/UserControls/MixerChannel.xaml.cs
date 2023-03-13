@@ -31,6 +31,18 @@ namespace StreamerWinui.UserControls
             DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
         }
 
+        public MixerChannel(WasapiAudioCapturingChannel wasapiAudioCapturingChannel)
+        {
+            this.InitializeComponent();
+
+            wasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
+            if (wasapiAudioCapturingChannel.CaptureState == CaptureState.Stopped)
+                wasapiAudioCapturingChannel.StartRecording();
+
+            DeviceNameTextBlock.Text = wasapiAudioCapturingChannel.MMDevice.FriendlyName;
+            WasapiAudioCapturingChannel = wasapiAudioCapturingChannel;
+        }
+
         public void SetVolumeMeterLevel(double dbfs)
         {
             this.dbfs = dbfs;
