@@ -2,6 +2,7 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using StreamerLib;
 using StreamerWinui.UserControls;
 using System;
 using Windows.Graphics;
@@ -17,7 +18,7 @@ namespace StreamerWinui
 
         public static readonly SizeInt32 DefaultWindowSize = new(380, 500);
 
-        const string DefaultPath = @"D:\\video\\img\\2.opus";
+        const string DefaultPath = @"C:\Users\Cray\Desktop\St\2.opus";
 
         public AudioWindow()
         {
@@ -40,7 +41,18 @@ namespace StreamerWinui
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-
+            if (!_streamController.StreamIsActive)
+            {
+                _streamController.AudioCapturing = true;
+                _streamController.AddClientAsFile(DefaultPath);
+                _streamController.StartStream();
+                StartButton.Content = "Stop";
+            }
+            else
+            {
+                _streamController.StopStream();
+                StartButton.Content = "Start";
+            }
         }
 
         private void CreateMixerChannelControl()

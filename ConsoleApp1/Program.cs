@@ -1,28 +1,16 @@
-﻿using NAudio.CoreAudioApi;
-using StreamerLib;
-using System.Threading.Channels;
+﻿using StreamerLib;
 
-unsafe internal partial class ConsoleApp1
+internal class ConsoleApp1
 {
     public static void Main()
     {
-        //AudioEncoder audioEncoder = new(new StreamerLib.StreamWriter(), Encoders.LibOpus);
-        //audioEncoder.Test();
-        if (File.Exists("Dlls/Dll.dll"))
-        {
-            FFmpegImport.Here();
+        var sc = new StreamController();
 
-        }
-
-        MMDevice device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-
-        StreamController streamController = new StreamController();
-
-        streamController.MMDevice = device;
-        streamController.AudioCapturing = true;
-        streamController.StartStream();
-        streamController.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
-        Thread.Sleep(20000);
-        streamController.StopStream();
+        sc.AudioCapturing = true;
+        sc.StartStream();
+        sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
+        //Thread.Sleep(1000);
+        Console.ReadKey();
+        sc.StopStream();
     }
 }

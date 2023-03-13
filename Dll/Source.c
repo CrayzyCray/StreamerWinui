@@ -1,5 +1,4 @@
 #include <Windows.h>
-#include <string.h>
 #include <stdbool.h>
 #include <libavutil/frame.h>
 #include <libavcodec/avcodec.h>
@@ -18,11 +17,21 @@ struct StreamParameters
     AVRational* Timebase;
 };
 
+void Here() { printf("\n\nhere\n\n"); }
+
+inline void PrintAVError(int errnum)
+{
+    char str[64];
+    av_strerror(errnum, &str, 64);
+    printf(str);
+    printf("\n");
+}
+
 DllExport int AudioEncoder_Constructor(
     const char* encoderName,
     int _sampleRate, 
     int channels,
-    int* FrameSizeInSamples,
+    int* frameSizeInSamples,
     AVCodecContext** codecContextOut,
     AVPacket** packetOut, 
     AVRational** timebaseOut,
@@ -39,19 +48,18 @@ DllExport int AudioEncoder_Constructor(
     AVCodecParameters* codecParameters = avcodec_parameters_alloc();
     avcodec_parameters_from_context(codecParameters, codecContext);
 
-    *FrameSizeInSamples = codecContext->frame_size;
+    *frameSizeInSamples = codecContext->frame_size;
     AVFrame* avFrame = av_frame_alloc();
-    avFrame->nb_samples = *FrameSizeInSamples;
+    avFrame->nb_samples = *frameSizeInSamples;
     av_channel_layout_default(&avFrame->ch_layout, channels);
     avFrame->format = AV_SAMPLE_FMT_FLT;
-
-    AVRational timebase = (AVRational){ 1, _sampleRate };
     
     *codecContextOut = codecContext;
     *packetOut = av_packet_alloc();
-    *timebaseOut = &timebase;
+    *timebaseOut = &(codecContext->time_base);
     *codecParametersOut = codecParameters;
     *avFrameOut = avFrame;
+    printf("AudioEncoder_Constructor\ntimebase = %d/%d\n", (**timebaseOut).num, (**timebaseOut).den);
 }
 
 DllExport bool AudioEncoder_EncodeAndWriteFrame(
@@ -157,9 +165,9 @@ DllExport int StreamWriter_AddClientAsFile(
     struct StreamParameters* streamParameters,
     int streamParametersLength)
 {
+    printf("\nStreamWriter_AddClientAsFile\n");
     AVFormatContext* formatContext;
     avformat_alloc_output_context2(&formatContext, NULL, NULL, path);
-
     for (int i = 0; i < streamParametersLength; i++)
     {
         avformat_new_stream(
@@ -176,10 +184,13 @@ DllExport int StreamWriter_AddClientAsFile(
     *formatContextOut = formatContext;
 
     for (int i = 0; i < streamParametersLength; i++)
+    {
         streamParameters[i].Timebase = &(formatContext->streams[i]->time_base);
+        printf("stream%d tb: %d/%d\n", i, formatContext->streams[i]->time_base.num, formatContext->streams[i]->time_base.den);
+    }
 }
 
-DllExport int StreamWriter_DeleteAllClients(AVFormatContext* formatContext)
+DllExport int StreamWriter_CloseFormatContext(AVFormatContext* formatContext)
 {
     av_write_trailer(formatContext);
     avio_closep(&formatContext->pb);
@@ -188,15 +199,14 @@ DllExport int StreamWriter_DeleteAllClients(AVFormatContext* formatContext)
 
 DllExport int StreamWriter_WriteFrame(
     AVPacket* packet, 
-    AVRational* packetTimebase, 
-    AVRational* streamTimebase, 
+    AVRational* packetTimebase,
+    AVRational* streamTimebase,
     AVFormatContext *formatContexts[],
     int formatContextsCount)
 {
     av_packet_rescale_ts(packet, *packetTimebase, *streamTimebase);
-    Here();
-    //int length = sizeof(formatContexts) / sizeof(formatContexts[0]);
-    printf("\nStreamWriter_WriteFrame\nClients: %d", formatContextsCount);
+    printf("\nStreamWriter_WriteFrame\nClients: %d\n", formatContextsCount);
+    printf("packet pts rescaled from %d/%d to %d/%d\n", packetTimebase->num, packetTimebase->den, streamTimebase->num, streamTimebase->den);
     for (int i = 0; i < formatContextsCount; i++)
     {
         int ret = av_write_frame(formatContexts[i], packet);
@@ -215,14 +225,6 @@ struct TestStruct
     int B;
 };
 
-inline int PrintAVError(int errnum)
-{
-    char str[64];
-    av_strerror(errnum, &str, 64);
-    printf(str);
-    printf("\n");
-}
-
 DllExport int TestStructs(struct TestStruct s)
 {
     printf("%d %d\n", s.A, s.B);
@@ -237,11 +239,6 @@ DllExport int Test(AVCodec** codec)
 DllExport int PrintCodecLongName(AVCodec* codec)
 {
     printf(codec->long_name);
-}
-
-int Here() 
-{
-    printf("\n\nhere\n\n"); 
 }
 
 DllExport char* GetNameOfEncoder(const char* encoderName)

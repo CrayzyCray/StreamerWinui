@@ -1,116 +1,114 @@
 using System.Net;
 
-namespace StreamerLib
+namespace StreamerLib;
+public unsafe class StreamWriter : IDisposable
 {
-    public unsafe class StreamWriter : IDisposable
+    public const int DefaultPort = 10000;
+    public StreamParameters GetStreamParameters(int streamIndex) => _streamParameters[streamIndex];
+    public StreamClient GetStreamClient(int id) => _streamClientsList[id];
+
+    private StreamParameters[] _streamParameters = new StreamParameters[0];
+    private List<StreamClient> _streamClientsList = new();
+
+    /// <returns>stream index</returns>
+    public int AddAvStream(nint codecParameters, nint timebase)
     {
-        public const int DefaultPort = 10000;
-        public StreamParameters GetStreamParameters(int streamIndex) => _streamParameters[streamIndex];
-        public StreamClient GetStreamClient(int id) => _streamClientsList[id];
+        Array.Resize(ref _streamParameters, _streamParameters.Length + 1);
+        _streamParameters[_streamParameters.Length-1] = new StreamParameters { CodecParameters = codecParameters, Timebase = timebase };
 
-        private StreamParameters[] _streamParameters = new StreamParameters[0];
-        private List<StreamClient> _streamClientsList = new();
+        return _streamParameters.Length - 1; //this is a StreamIndex
+    }
 
-        /// <returns>stream index</returns>
-        public int AddAvStream(nint codecParameters, nint timebase)
-        {
-            Array.Resize(ref _streamParameters, _streamParameters.Length + 1);
-            _streamParameters[_streamParameters.Length-1] = new StreamParameters { CodecParameters = codecParameters, Timebase = timebase };
+    public bool AddClient(IPAddress ipAddress, int port = DefaultPort)
+    {
+        if (port is < 0 or > 65535)
+            return false;
 
-            return _streamParameters.Length - 1; //this is a StreamIndex
-        }
+        if (_streamParameters.Length == 0)
+            return false;
 
-        public bool AddClient(IPAddress ipAddress, int port = DefaultPort)
-        {
-            if (port is < 0 or > 65535)
-                return false;
+        string outputUrl = $"rist://{ipAddress}:{port}";
 
-            if (_streamParameters.Length == 0)
-                return false;
+        nint formatContext;
+        fixed (StreamParameters* ptr = _streamParameters)
+            FFmpegImport.StreamWriter_AddClient(
+                outputUrl,
+                &formatContext,
+                ptr,
+                _streamParameters.Length);
 
-            string outputUrl = $"rist://{ipAddress}:{port}";
+        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, IP = ipAddress, Port = port });
 
-            nint formatContext;
-            fixed (StreamParameters* ptr = _streamParameters)
-                FFmpegImport.StreamWriter_AddClient(
-                    outputUrl,
-                    &formatContext,
-                    ptr,
-                    _streamParameters.Length);
+        return true;
+    }
 
-            _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, IP = ipAddress, Port = port });
+    public bool AddClientAsFile(string path)
+    {
+        if (_streamParameters.Length == 0)
+            return false;
 
-            return true;
-        }
+        nint formatContext;
+        fixed (StreamParameters* ptr = _streamParameters)
+            FFmpegImport.StreamWriter_AddClientAsFile(
+                path,
+                &formatContext,
+                ptr,
+                _streamParameters.Length);
 
-        public bool AddClientAsFile(string path)
-        {
-            if (_streamParameters.Length == 0)
-                return false;
+        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, IsFile = true });
 
-            nint formatContext;
-            fixed (StreamParameters* ptr = _streamParameters)
-                FFmpegImport.StreamWriter_AddClientAsFile(
-                    path,
-                    &formatContext,
-                    ptr,
-                    _streamParameters.Length);
+        return true;
+    }
 
-            _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, IsFile = true });
+    public void Stop()
+    {
+        DeleteAllClients();
+        DeleteStreamParameters();
+    }
 
-            return true;
-        }
+    private void DeleteAllClients()
+    {
+        foreach (var fc in _streamClientsList)
+            FFmpegImport.StreamWriter_CloseFormatContext(fc.FormatContext);
 
-        public void Stop()
-        {
-            DeleteAllClients();
-            DeleteStreamParameters();
-        }
+        _streamClientsList.Clear();
+    }
 
-        private void DeleteAllClients()
-        {
-            foreach (var fc in _streamClientsList)
-                FFmpegImport.StreamWriter_DeleteAllClients(fc.FormatContext);
+    private void DeleteStreamParameters() =>
+        _streamParameters = Array.Empty<StreamParameters>();
 
-            _streamClientsList.Clear();
-        }
+    public int WriteFrame(nint packet, nint packetTimebase, int streamIndex)
+    {
+        nint[] formatContexts = new nint[_streamClientsList.Count];
+        for (int i = 0; i < _streamClientsList.Count; i++)
+            formatContexts[i] = _streamClientsList[i].FormatContext;
 
-        private void DeleteStreamParameters() =>
-            _streamParameters = Array.Empty<StreamParameters>();
+        int ret = FFmpegImport.StreamWriter_WriteFrame(
+            packet,
+            packetTimebase,
+            _streamParameters[streamIndex].Timebase,
+            formatContexts,
+            formatContexts.Length);
 
-        public int WriteFrame(nint packet, nint packetTimebase, int streamIndex)
-        {
-            nint[] formatContexts = new nint[_streamClientsList.Count];
-            for (int i = 0; i < _streamClientsList.Count; i++)
-                formatContexts[i] = _streamClientsList[i].FormatContext;
+        return ret;
+    }
 
-            int ret = FFmpegImport.StreamWriter_WriteFrame(
-                packet,
-                packetTimebase,
-                _streamParameters[streamIndex].Timebase,
-                formatContexts,
-                formatContexts.Length);
+    public void Dispose()
+    {
+        DeleteAllClients();
+    }
 
-            return ret;
-        }
+    public class StreamClient
+    {
+        public IPAddress IP;
+        public int Port;
+        public nint FormatContext;
+        public bool IsFile;
+    }
 
-        public void Dispose()
-        {
-            DeleteAllClients();
-        }
-
-        public class StreamClient
-        {
-            public IPAddress IP;
-            public int Port;
-            public nint FormatContext;
-            public bool IsFile;
-        }
-
-        public struct StreamParameters
-        {
-            public nint CodecParameters;
-            public nint Timebase;
-        }
+    public struct StreamParameters
+    {
+        public nint CodecParameters;
+        public nint Timebase;
     }
 }
