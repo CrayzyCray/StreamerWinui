@@ -4,6 +4,10 @@ internal class ConsoleApp1
 {
     public static void Main()
     {
+        FFmpegImport.Here();
+        FFmpegImport.Here();
+        FFmpegImport.Here();
+        return;
         var sc = new StreamController();
 
         sc.AudioCapturing = true;

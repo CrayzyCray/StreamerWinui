@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 
 namespace StreamerLib;
@@ -79,16 +80,20 @@ public unsafe class StreamWriter : IDisposable
 
     public int WriteFrame(nint packet, nint packetTimebase, int streamIndex)
     {
+        int ret = 0;
         nint[] formatContexts = new nint[_streamClientsList.Count];
         for (int i = 0; i < _streamClientsList.Count; i++)
             formatContexts[i] = _streamClientsList[i].FormatContext;
-
-        int ret = FFmpegImport.StreamWriter_WriteFrame(
-            packet,
-            packetTimebase,
-            _streamParameters[streamIndex].Timebase,
-            formatContexts,
-            formatContexts.Length);
+        if (formatContexts.Length > 0)
+        {
+            ret = FFmpegImport.StreamWriter_WriteFrame(
+                packet,
+                packetTimebase,
+                _streamParameters[streamIndex].Timebase,
+                formatContexts,
+                formatContexts.Length);
+        }
+            
 
         return ret;
     }

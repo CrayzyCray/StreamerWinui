@@ -60,7 +60,8 @@ namespace StreamerWinui.UserControls
 
         public void Dispose()
         {
-            StackPanel.Children.Clear();
+            if (StackPanel != null)
+                StackPanel.Children.Clear();
             _devices.ForEach(d=>d.Dispose());
             _devices.Clear();
         }

@@ -85,23 +85,22 @@ public unsafe struct Ddagrab : IDisposable
 internal class AudioBufferSlicer
 {
     public byte[] Buffer => _buffer.InternalArray;
-    public byte[] BufferNormal => _bufferNormal;
+    public byte[] OriginalArray => _originalArray;
     public bool BufferIsFull => _buffer.IsFull;
     public int BufferedCount => _bufferSecond.Buffered;
-    public List<int> SliceIndexes => _sliceIndexes;
     public int SliceSizeInBytes => _sliceSizeInBytes;
     
     private Buffer<byte> _buffer;
     private Buffer<byte> _bufferSecond;
     private int _sliceSizeInBytes;
-    private List<int> _sliceIndexes = new();
-    private byte[] _bufferNormal;
+    private byte[] _originalArray = Array.Empty<byte>();
     
     public AudioBufferSlicer(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
     {
-        _buffer = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
-        _bufferSecond = new(SliceSizeInSamples * SampleSizeInBytes * Channels);
-        _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
+        int sizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
+        _buffer = new(sizeInBytes);
+        _bufferSecond = new(sizeInBytes);
+        _sliceSizeInBytes = sizeInBytes;
     }
     
     public AudioBufferSlicer(int sizeInBytes)
@@ -113,11 +112,11 @@ internal class AudioBufferSlicer
     
     public List<ArraySegment<byte>> SliceBufferToArraySegments(byte[] buffer, int bufferLength)
     {
-        _bufferNormal = buffer;
+        _originalArray = buffer;
         int bytesWritedInBufferMode = 0;
         
         if (_buffer.IsFull)
-            _buffer.clear();
+            _buffer.Clear();
 
         int retSize = (bufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes +
                       Convert.ToInt32(_buffer.IsFull);
@@ -138,8 +137,16 @@ internal class AudioBufferSlicer
         
         int index = bufferLength - (bufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes;
         _bufferSecond.Fill(buffer, bufferLength, index, bufferLength - index);
-
+        
         return buffersList;
+    }
+
+    public void Clear()
+    {
+        _buffer.Clear();
+        _bufferSecond.Clear();
+        _originalArray = Array.Empty<byte>();
+
     }
 }
 
@@ -152,13 +159,17 @@ internal class Buffer<T>
     public bool IsEmpty => Buffered == 0;
     public bool NotEmpty => Buffered != 0;
     public bool IsFull => Buffered == Size;
-    public void clear() => _nextElementPointer = 0;
 
     public ref T this[int index] => ref _buffer[index];
         
     private T[] _buffer;
     private int _nextElementPointer = 0;
-        
+
+    public void Clear()
+    {
+        _nextElementPointer = 0;
+    }
+
     public void Append(in T value)
     {
         if (_nextElementPointer >= _buffer.Length)
@@ -167,12 +178,16 @@ internal class Buffer<T>
         _nextElementPointer++;
     }
     
-    public void FillToEnd(T[] buffer, int bufferLength)
+    
+    /// <returns>Count of buffered items</returns>
+    public int FillToEnd(T[] buffer, int bufferLength)
     {
         if (bufferLength < SizeRemain)
-            throw new ArgumentException("BufferLength less than remain size");
+            throw new ArgumentException("BufferLength less than need for fill");
+        int ret = SizeRemain;
         Array.Copy(buffer, 0, _buffer, _nextElementPointer, SizeRemain);
         _nextElementPointer = _buffer.Length;
+        return ret;
     }
 
     public void Fill(T[] buffer, int bufferLength, int index, int length)
@@ -182,51 +197,11 @@ internal class Buffer<T>
         Array.Copy(buffer, index, _buffer, _nextElementPointer, length);
         _nextElementPointer += length;
     }
-    
-    public Buffer(int size) => _buffer = new T[size];
-}
 
-internal class ByteBuffer
-{
-    public byte[] InternalArray => _buffer;
-    public int Count => _nextElementPointer;
-    public int Size => _buffer.Length;
-    public int SizeRemain => Size - Count;
-    public bool IsEmpty => Count == 0;
-    public bool NotEmpty => Count != 0;
-    public bool IsFull => Count == Size;
-    public void clear() => _nextElementPointer = 0;
-
-    public ref byte this[int Index] => ref _buffer[Index];
-        
-    private byte[] _buffer;
-    private int _nextElementPointer = 0;
-        
-    public void Append(in byte value)
+    public Buffer(int size)
     {
-        if (_nextElementPointer >= _buffer.Length)
-            throw new Exception("buffer overflowed");
-        _buffer[_nextElementPointer] = value;
-        _nextElementPointer++;
+        _buffer = new T[size];
     }
-    
-    public void FillToEnd(byte[] Buffer, int BufferLength)
-    {
-        if (BufferLength < SizeRemain)
-            throw new ArgumentException("BufferLength less than remain size");
-        Array.Copy(Buffer, 0, _buffer, _nextElementPointer, SizeRemain);
-        _nextElementPointer = _buffer.Length;
-    }
-
-    public void Fill(byte[] Buffer, int BufferLength, int Index, int Length)
-    {
-        if (Index + Length > BufferLength || Length > SizeRemain)
-            throw new ArgumentOutOfRangeException();
-        Array.Copy(Buffer, Index, _buffer, _nextElementPointer, Length);
-        _nextElementPointer += Length;
-    }
-    
-    public ByteBuffer(int size) => _buffer = new byte[size];
 }
 
 /*

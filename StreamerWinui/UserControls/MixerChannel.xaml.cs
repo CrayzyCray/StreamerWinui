@@ -3,6 +3,7 @@ using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using StreamerLib;
 using System;
+using System.Threading.Tasks;
 
 namespace StreamerWinui.UserControls;
 public sealed partial class MixerChannel : UserControl
@@ -47,23 +48,22 @@ public sealed partial class MixerChannel : UserControl
         VolumeCanvas.Invalidate();
     }
 
-    private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs e)
+    private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs args)
     {
         //if (_capture.CaptureState == CaptureState.Stopped)
         //    return;
+            var buffer = new WaveBuffer(args.Buffer);
+            float peak = 0;
 
-        var buffer = new WaveBuffer(e.Buffer);
-        float peak = 0;
+            for (int index = 0; index < args.BytesRecorded / 4; index++)
+            {
+                var sample = buffer.FloatBuffer[index];
+                if (sample < 0) sample = -sample;
+                if (sample > peak) peak = sample;
+            }
 
-        for (int index = 0; index < e.BytesRecorded / 4; index++)
-        {
-            var sample = buffer.FloatBuffer[index];
-            if (sample < 0) sample = -sample;
-            if (sample > peak) peak = sample;
-        }
-
-        double dbfs = 20 * Math.Log10(peak);
-        SetVolumeMeterLevel(dbfs);
+            double dbfs = 20 * Math.Log10(peak);
+            SetVolumeMeterLevel(dbfs);
     }
 
     private void DeleteButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)

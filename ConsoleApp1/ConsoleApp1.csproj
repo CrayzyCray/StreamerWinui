@@ -8,6 +8,7 @@
     <StartupObject>ConsoleApp1</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Platforms>AnyCPU</Platforms>
+    <Configurations>Debug;Release;Debug TRACE_ON</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

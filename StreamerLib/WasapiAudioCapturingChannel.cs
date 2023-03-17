@@ -2,10 +2,11 @@
 using NAudio.Wave;
 
 namespace StreamerLib;
+
 public class WasapiAudioCapturingChannel
 {
     public const float DefaultVolume = 1f;
-    public const int QueueCapacity = 8;
+    public const int QueueMaximumCapacity = 32;
 
     public int Channels => _wasapiCapture.WaveFormat.Channels;
     public WaveFormat WaveFormat => _wasapiCapture.WaveFormat;
@@ -14,10 +15,11 @@ public class WasapiAudioCapturingChannel
     public Queue<ArraySegment<byte>> Buffers => _buffersQueue;
     public event EventHandler<WaveInEventArgs> DataAvailable;
     public CaptureState CaptureState => _wasapiCapture.CaptureState;
+    public string DeviceFriendlyName { get; }
 
     private AudioBufferSlicer _audioBufferSlicer;
     private WasapiCapture _wasapiCapture;
-    private Queue<ArraySegment<byte>> _buffersQueue = new Queue<ArraySegment<byte>>(QueueCapacity);
+    private Queue<ArraySegment<byte>> _buffersQueue = new();
 
     public ArraySegment<byte> ReadNextBuffer()
     {
@@ -31,41 +33,53 @@ public class WasapiAudioCapturingChannel
     public WasapiAudioCapturingChannel(MMDevice mmDevice, int frameSizeInBytes)
     {
         if (mmDevice.DataFlow == DataFlow.All)
-            throw new Exception("Wrong mmDevice.DataFlow");
-        MMDevice = mmDevice;
+            throw new Exception("Unsupported MMDevice.DataFlow");
+
         _wasapiCapture = (mmDevice.DataFlow == DataFlow.Capture)
             ? new WasapiCapture(mmDevice)
             : new WasapiLoopbackCapture(mmDevice);
-        _audioBufferSlicer = new AudioBufferSlicer(frameSizeInBytes);
 
+        MMDevice = mmDevice;
+        DeviceFriendlyName = mmDevice.FriendlyName;
+        _audioBufferSlicer = new AudioBufferSlicer(frameSizeInBytes);
         _wasapiCapture.DataAvailable += _wasapiCapture_DataAvailable;
     }
 
-    private void _wasapiCapture_DataAvailable(object? s, WaveInEventArgs e)
+    private void _wasapiCapture_DataAvailable(object? s, WaveInEventArgs args)
     {
-        if (Volume != 1f)
-            ApplyVolume(e.Buffer, e.BytesRecorded, Volume);
+        if (args.BytesRecorded == 0)
+            return;
+        if (Volume < 1f)
+            ApplyVolume(args.Buffer, args.BytesRecorded, Volume);
 
-        var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(e.Buffer, e.BytesRecorded);
-        if (_buffersQueue.Count + buffersList.Count > QueueCapacity)
+        var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(args.Buffer, args.BytesRecorded);
+        if (_buffersQueue.Count + buffersList.Count > QueueMaximumCapacity)
+        {
             _buffersQueue.Clear();
+            LoggingHelper.LogToCon("buffer queue cleared");
+        }
         foreach (var item in buffersList)
             _buffersQueue.Enqueue(item);
-        DataAvailable.Invoke(this, e);
+        DataAvailable.Invoke(this, args);
     }
 
     public bool BufferIsAvailable => (_buffersQueue.Count > 0) ? true : false;
 
     private unsafe void ApplyVolume(byte[] buffer, int bufferSize, float volume)
     {
-        fixed (byte* p = buffer)
+        fixed (byte* ptr = buffer)
         {
-            float* pf = (float*)p;
+            float* ptrFloat = (float*)ptr;
             for (int i = 0; i < bufferSize / 4; i++)
-                pf[i] *= volume;
+                ptrFloat[i] *= volume;
         }
     }
 
     public void StartRecording() => _wasapiCapture.StartRecording();
-    public void StopRecording() => _wasapiCapture.StopRecording();
+
+    public void StopRecording()
+    {
+        _wasapiCapture.StopRecording();
+        _audioBufferSlicer.Clear();
+    }
 }

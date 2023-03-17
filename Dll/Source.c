@@ -3,13 +3,18 @@
 #include <libavutil/frame.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <stdio.h>
 
 #pragma comment(lib, "avutil.lib")
 #pragma comment(lib, "avcodec.lib")
 #pragma comment(lib, "avformat.lib")
 #pragma comment(lib, "avfilter.lib")
 
+
 #define DllExport __declspec(dllexport)
+const char* path = "C:\\Users\\Cray\\Desktop\\dbg.log";
+
+FILE* _logFile;
 
 struct StreamParameters
 {
@@ -17,14 +22,35 @@ struct StreamParameters
     AVRational* Timebase;
 };
 
-void Here() { printf("\n\nhere\n\n"); }
+
+
+void inline LogToFile(const char* format, ...)
+{
+#if _DEBUG
+    va_list ap;
+    va_start(ap, format);
+    if (_logFile == NULL)
+    {
+        fopen_s(&_logFile, path, "w");
+        if (_logFile == NULL)
+            return;
+        fprintf(_logFile, "file opened\n");
+    }
+    vfprintf(_logFile, format, ap);
+#endif
+}
+
+DllExport void Here()
+{
+    LogToFile("\n\nhere%d\n\n", -1);
+}
 
 inline void PrintAVError(int errnum)
 {
     char str[64];
     av_strerror(errnum, &str, 64);
-    printf(str);
-    printf("\n");
+    LogToFile(str);
+    LogToFile("\n");
 }
 
 DllExport int AudioEncoder_Constructor(
@@ -59,7 +85,7 @@ DllExport int AudioEncoder_Constructor(
     *timebaseOut = &(codecContext->time_base);
     *codecParametersOut = codecParameters;
     *avFrameOut = avFrame;
-    printf("AudioEncoder_Constructor\ntimebase = %d/%d\n", (**timebaseOut).num, (**timebaseOut).den);
+    LogToFile("AudioEncoder_Constructor\ntimebase = %d/%d\n", (**timebaseOut).num, (**timebaseOut).den);
 }
 
 DllExport bool AudioEncoder_EncodeAndWriteFrame(
@@ -72,45 +98,48 @@ DllExport bool AudioEncoder_EncodeAndWriteFrame(
     AVPacket* packet,
     AVFrame* frame)
 {
-    printf("\nAudioEncoder_EncodeAndWriteFrame\n");
+    LogToFile("\nAudioEncoder_EncodeAndWriteFrame\n");
     int ret;
     av_packet_unref(packet);
     //av_frame_unref(frame);
     //frame->nb_samples = codecContext->frame_size;
     frame->pts = pts;
     //av_channel_layout_default(&frame->ch_layout, channels);
+    //LogToFileMy("%d\n", frame->nb_samples);
 
-    printf("%d\n", frame->nb_samples);
-    printf("fill parameters: frame=%p channels=%d buffer=%p frameSize=%d\n", frame, channels, buffer, frameSizeInBytes);
+    LogToFile("fill parameters: frame=%p channels=%d buffer=%p frameSize=%d\n", frame, channels, buffer, frameSizeInBytes);
 
     ret = avcodec_fill_audio_frame(frame, channels, AV_SAMPLE_FMT_FLT, buffer, frameSizeInBytes, 1);
     if (ret < 0)
     {
-        printf("fill error: ");
+        LogToFile("fill error: ");
         PrintAVError(ret);
+        return false;
     }
 
     ret = avcodec_send_frame(codecContext, frame);
     if (ret < 0)
     {
-        //printf("send error: ");
+        LogToFile("send error: ");
         PrintAVError(ret);
+        return false;
     }
 
-    printf("frame pts = %d\n", pts);
+    LogToFile("frame pts = %d\n", pts);
 
     ret = avcodec_receive_packet(codecContext, packet);
     if (ret < 0)
     {
-        printf("recieve error: ");
+        LogToFile("recieve error: ");
         PrintAVError(ret);
+        return false;
     }
 
     if (ret == 0)
     {
 
         packet->stream_index = streamIndex;
-        printf("packet pts = %d\n", packet->pts);
+        LogToFile("packet pts = %d\n", packet->pts);
         return true;
     }
 
@@ -165,7 +194,7 @@ DllExport int StreamWriter_AddClientAsFile(
     struct StreamParameters* streamParameters,
     int streamParametersLength)
 {
-    printf("\nStreamWriter_AddClientAsFile\n");
+    LogToFile("\nStreamWriter_AddClientAsFile\n");
     AVFormatContext* formatContext;
     avformat_alloc_output_context2(&formatContext, NULL, NULL, path);
     for (int i = 0; i < streamParametersLength; i++)
@@ -186,7 +215,7 @@ DllExport int StreamWriter_AddClientAsFile(
     for (int i = 0; i < streamParametersLength; i++)
     {
         streamParameters[i].Timebase = &(formatContext->streams[i]->time_base);
-        printf("stream%d tb: %d/%d\n", i, formatContext->streams[i]->time_base.num, formatContext->streams[i]->time_base.den);
+        LogToFile("stream%d tb: %d/%d\n", i, formatContext->streams[i]->time_base.num, formatContext->streams[i]->time_base.den);
     }
 }
 
@@ -205,8 +234,8 @@ DllExport int StreamWriter_WriteFrame(
     int formatContextsCount)
 {
     av_packet_rescale_ts(packet, *packetTimebase, *streamTimebase);
-    printf("\nStreamWriter_WriteFrame\nClients: %d\n", formatContextsCount);
-    printf("packet pts rescaled from %d/%d to %d/%d\n", packetTimebase->num, packetTimebase->den, streamTimebase->num, streamTimebase->den);
+    LogToFile("\nStreamWriter_WriteFrame\nClients: %d\n", formatContextsCount);
+    LogToFile("packet pts rescaled from %d/%d to %d/%d\n", packetTimebase->num, packetTimebase->den, streamTimebase->num, streamTimebase->den);
     for (int i = 0; i < formatContextsCount; i++)
     {
         int ret = av_write_frame(formatContexts[i], packet);
@@ -227,7 +256,8 @@ struct TestStruct
 
 DllExport int TestStructs(struct TestStruct s)
 {
-    printf("%d %d\n", s.A, s.B);
+    LogToFile("%d %d\n", s.A, s.B);
+    
 }
 
 DllExport int Test(AVCodec** codec)
@@ -238,7 +268,7 @@ DllExport int Test(AVCodec** codec)
 
 DllExport int PrintCodecLongName(AVCodec* codec)
 {
-    printf(codec->long_name);
+    LogToFile(codec->long_name);
 }
 
 DllExport char* GetNameOfEncoder(const char* encoderName)
@@ -248,7 +278,7 @@ DllExport char* GetNameOfEncoder(const char* encoderName)
     AVCodec* avcodec = avcodec_find_encoder_by_name(encoderName);
 
     char* ret = avcodec->long_name;
-    printf(ret);
+    LogToFile(ret);
     return ret;
 }
 

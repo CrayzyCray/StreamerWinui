@@ -25,7 +25,9 @@
             <StackPanel Spacing="6">
 
                 <TextBox Name="pathTextBox"></TextBox>
-                <Button Name="StartButton" Click="StartButton_Click">Start</Button>
+                <Button Name="StartButton" Click="StartButton_Click">
+                    <TextBlock Name="StartButtonText" Text="Start"/>
+                </Button>
             </StackPanel>
         </Grid>
 

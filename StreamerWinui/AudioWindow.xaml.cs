@@ -46,12 +46,12 @@ namespace StreamerWinui
                 _streamController.AudioCapturing = true;
                 _streamController.AddClientAsFile(DefaultPath);
                 _streamController.StartStream();
-                StartButton.Content = "Stop";
+                StartButtonText.Text = "Stop";
             }
             else
             {
                 _streamController.StopStream();
-                StartButton.Content = "Start";
+                StartButtonText.Text = "Start";
             }
         }
 
