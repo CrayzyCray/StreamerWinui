@@ -3,42 +3,54 @@
 #include <libavutil/frame.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <stdio.h>
 
 #pragma comment(lib, "avutil.lib")
 #pragma comment(lib, "avcodec.lib")
 #pragma comment(lib, "avformat.lib")
 #pragma comment(lib, "avfilter.lib")
 
-
 #define DllExport __declspec(dllexport)
-const char* path = "C:\\Users\\Cray\\Desktop\\dbg.log";
+#define TRACE_ST true
 
-FILE* _logFile;
+#if TRACE_ST
+    #include <stdio.h>
+    #include <time.h>
+    FILE* _logFile;
+    const char* path = "C:\\Users\\Cray\\Desktop\\dbg.log";
+    bool isFirstLogToFile = true;
+
+    void inline LogToFile(const char* format, ...)
+    {
+        if (isFirstLogToFile)
+        {
+            isFirstLogToFile = false;
+            if (_logFile == NULL)
+            {
+                fopen_s(&_logFile, path, "w");
+                if (_logFile == NULL)
+                    return;
+                time_t current_time = time(NULL);
+                struct tm local_time;
+                localtime_s(&local_time, &current_time);
+                char str[64];
+                asctime_s(&str, sizeof str, &local_time);
+                fprintf(_logFile, "File opened\nDate:%s\n\n", str);
+            }
+        }
+    
+        va_list ap;
+        va_start(ap, format);
+        vfprintf(_logFile, format, ap);
+    }
+#else
+    #define LogToFile(...)
+#endif
 
 struct StreamParameters
 {
     AVCodecParameters* CodecParameters;
     AVRational* Timebase;
 };
-
-
-
-void inline LogToFile(const char* format, ...)
-{
-#if _DEBUG
-    va_list ap;
-    va_start(ap, format);
-    if (_logFile == NULL)
-    {
-        fopen_s(&_logFile, path, "w");
-        if (_logFile == NULL)
-            return;
-        fprintf(_logFile, "file opened\n");
-    }
-    vfprintf(_logFile, format, ap);
-#endif
-}
 
 DllExport void Here()
 {
@@ -245,51 +257,3 @@ DllExport int StreamWriter_WriteFrame(
 
     return 0;
 }
-
-#pragma region testsRegion
-
-struct TestStruct
-{
-    int A;
-    int B;
-};
-
-DllExport int TestStructs(struct TestStruct s)
-{
-    LogToFile("%d %d\n", s.A, s.B);
-    
-}
-
-DllExport int Test(AVCodec** codec)
-{
-    AVCodec* c = avcodec_find_encoder_by_name("libopus");
-    *codec = c;
-}
-
-DllExport int PrintCodecLongName(AVCodec* codec)
-{
-    LogToFile(codec->long_name);
-}
-
-DllExport char* GetNameOfEncoder(const char* encoderName)
-{
-    av_frame_alloc();
-    char str[] = "libopus";
-    AVCodec* avcodec = avcodec_find_encoder_by_name(encoderName);
-
-    char* ret = avcodec->long_name;
-    LogToFile(ret);
-    return ret;
-}
-
-DllExport AVCodec* AVCodecFindEncoderByName(const char* encoderName)
-{
-    return avcodec_find_encoder_by_name(encoderName);
-}
-
-DllExport AVCodecContext* AvCodecAllocContext3(AVCodec* avCodec)
-{
-    return avcodec_alloc_context3(avCodec);
-}
-
-#pragma endregion testsRegion
