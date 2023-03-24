@@ -12,7 +12,7 @@ public class WasapiAudioCapturingChannel
     public WaveFormat WaveFormat => _wasapiCapture.WaveFormat;
     public MMDevice MMDevice { get; }
     public float Volume { get; set; } = DefaultVolume;
-    public Queue<ArraySegment<byte>> Buffers => _buffersQueue;
+    //public Queue<ArraySegment<byte>> Buffers => _buffersQueue;
     public event EventHandler<WaveInEventArgs> DataAvailable;
     public CaptureState CaptureState => _wasapiCapture.CaptureState;
     public string DeviceFriendlyName { get; }
@@ -26,18 +26,22 @@ public class WasapiAudioCapturingChannel
         if (!BufferIsAvailable)
             throw new Exception("Buffer is not available");
         if (_wasapiCapture.CaptureState == CaptureState.Stopped)
-            return ArraySegment<byte>.Empty;
-        return _buffersQueue.Dequeue();
+            throw new Exception("CaptureState.Stopped");
+        ArraySegment<byte> buffer;
+        lock (obj)
+        {
+            buffer = _buffersQueue.Dequeue();
+        }
+        return buffer;
     }
 
     public WasapiAudioCapturingChannel(MMDevice mmDevice, int frameSizeInBytes)
     {
-        if (mmDevice.DataFlow == DataFlow.All)
-            throw new Exception("Unsupported MMDevice.DataFlow");
-
-        _wasapiCapture = (mmDevice.DataFlow == DataFlow.Capture)
-            ? new WasapiCapture(mmDevice)
-            : new WasapiLoopbackCapture(mmDevice);
+        if (mmDevice.DataFlow == DataFlow.Capture)
+            _wasapiCapture = new WasapiCapture(mmDevice);
+        else if (mmDevice.DataFlow == DataFlow.Render)
+            _wasapiCapture = new WasapiLoopbackCapture(mmDevice);
+        else throw new Exception("Unsupported MMDevice.DataFlow");
 
         MMDevice = mmDevice;
         DeviceFriendlyName = mmDevice.FriendlyName;
@@ -53,17 +57,35 @@ public class WasapiAudioCapturingChannel
             ApplyVolume(args.Buffer, args.BytesRecorded, Volume);
 
         var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(args.Buffer, args.BytesRecorded);
-        if (_buffersQueue.Count + buffersList.Count > QueueMaximumCapacity)
+        lock (obj)
         {
-            _buffersQueue.Clear();
-            LoggingHelper.LogToCon("buffer queue cleared");
+            if (_buffersQueue.Count + buffersList.Count > QueueMaximumCapacity)
+            {
+                _buffersQueue.Clear();
+                LoggingHelper.LogToCon("buffer queue cleared");
+            }
+            foreach (var item in buffersList)
+                _buffersQueue.Enqueue(item);
         }
-        foreach (var item in buffersList)
-            _buffersQueue.Enqueue(item);
         DataAvailable.Invoke(this, args);
     }
 
-    public bool BufferIsAvailable => (_buffersQueue.Count > 0) ? true : false;
+    //public bool BufferIsAvailable => (_buffersQueue.Count > 0) ? true : false;
+
+    private object obj = new();
+    public bool BufferIsAvailable
+    {
+        get
+        {
+            bool b = false;
+            lock (obj)
+            {
+                if (_buffersQueue.Count > 0)
+                    b = true;
+            }
+            return b;
+        }
+    }
 
     private unsafe void ApplyVolume(byte[] buffer, int bufferSize, float volume)
     {

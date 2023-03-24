@@ -17,12 +17,13 @@ public class MasterChannel : IDisposable
     private AudioEncoder _audioEncoder;
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
-    private Thread _mixerThread;
-    private object _lockObj = new();
+    private Task _mixerThread;
+    private EventWaitHandle _eventWaitHandle = new(false, EventResetMode.AutoReset);
 
     public MasterChannel(StreamWriter streamWriter, Encoders encoder)
     {
-        _mixerThread = new Thread(MixingMethod);
+        _mixerThread = new Task(MixingMethod);
+        _mixerThread.Start();
         StreamWriter = streamWriter;
         Encoder = encoder;
         _audioEncoder = new(streamWriter, encoder);
@@ -71,70 +72,63 @@ public class MasterChannel : IDisposable
             LoggingHelper.LogToCon("state is not streaming");
             return;
         }
-
-        if (Monitor.IsEntered(_lockObj))
-        {
-            LoggingHelper.LogToCon("tryEnter is false, MixingMethod is skipped");
-        }
-        else
-        {
-            LoggingHelper.LogToCon("tryEnter is true, starting MixingMethod");
-            MixingMethod();
-        }
-        //if (_mixerThread.IsAlive)
-        //    return;
-
-        //_mixerThread = new Thread(MixingMethod);
-        //_mixerThread.Start();
+        
+        _eventWaitHandle.Set();
     }
 
     
 
     private unsafe void MixingMethod()
     {
-        Monitor.Enter(_lockObj);
+        while (true)
+        {
+            _eventWaitHandle.WaitOne();
+            
+            while (AllBuffersIsAvalibel())
+            {
+                LoggingHelper.LogToCon("All devices have avalible buffer");
+                LoggingHelper.LogToCon($"Devices count: {_audioChannels.Count} list:");
+                // foreach (var channel in _audioChannels)
+                //     LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
 
+                var readBuffer = _audioChannels[0].ReadNextBuffer();
+                if (readBuffer == ArraySegment<byte>.Empty)
+                    LoggingHelper.LogToCon("array serment is empty");
+                readBuffer.CopyTo(_masterBuffer, 0);
+                fixed (byte* ptr1 = _masterBuffer)
+                {
+                    float* masterBufferFloat = (float*)ptr1;
+
+                    for (int i = 1; i < _audioChannels.Count; i++)
+                    {
+                        var buffer = _audioChannels[i].ReadNextBuffer();
+
+                        fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
+                        {
+                            float* bufferFloat = (float*)ptr2;
+                            for (int j = 0; j < _masterBuffer.Length; j++)
+                            {
+                                masterBufferFloat[j] += bufferFloat[j];
+                            }
+                        }
+                    }
+
+                    //clipping
+                    for (int j = 0; j < _masterBuffer.Length; j++)
+                    {
+                        if (masterBufferFloat[j] > 1f)
+                            masterBufferFloat[j] = 1f;
+                        else if (masterBufferFloat[j] < -1f)
+                            masterBufferFloat[j] = -1f;
+                    }
+                    _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
+                }
+            }
+        }
         //LoggingHelper.LogToCon("Devices list:");
         //foreach (var channel in _audioChannels)
         //    LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
 
-        while (AllBuffersIsAvalibel())
-        {
-            LoggingHelper.LogToCon("All devices have avalible buffer");
-            LoggingHelper.LogToCon($"Devices count: {_audioChannels.Count} list:");
-            foreach (var channel in _audioChannels)
-                LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
-            _audioChannels[0].ReadNextBuffer().CopyTo(_masterBuffer, 0);
-            fixed (byte* ptr1 = _masterBuffer)
-            {
-                float* masterBufferFloat = (float*)ptr1;
-
-                for (int i = 1; i < _audioChannels.Count; i++)
-                {
-                    var buffer = _audioChannels[i].ReadNextBuffer();
-
-                    fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
-                    {
-                        float* bufferFloat = (float*)ptr2;
-                        for (int j = 0; j < _masterBuffer.Length; j++)
-                        {
-                            masterBufferFloat[j] += bufferFloat[j];
-                        }
-                    }
-                }
-
-                //clipping
-                for (int j = 0; j < _masterBuffer.Length; j++)
-                {
-                    if (masterBufferFloat[j] > 1f)
-                        masterBufferFloat[j] = 1f;
-                    else if (masterBufferFloat[j] < -1f)
-                        masterBufferFloat[j] = -1f;
-                }
-                _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
-            }
-        }
-        Monitor.Exit(_lockObj);
         LoggingHelper.LogToCon("Mixer method finished");
     }
 

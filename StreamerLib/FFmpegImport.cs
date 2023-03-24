@@ -8,7 +8,7 @@ public static unsafe partial class FFmpegImport
 
     [LibraryImport(DllPath)]
     public static partial void Here();
-
+    
     [LibraryImport(DllPath)]
     internal static partial int AudioEncoder_Constructor(
         [MarshalAs(UnmanagedType.LPStr)] String encoderName,
