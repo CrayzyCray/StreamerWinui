@@ -10,9 +10,11 @@
 #pragma comment(lib, "avfilter.lib")
 
 #define DllExport __declspec(dllexport)
-#define TRACE_ST true
+#define TRACE_ST_LogToFile 1
+#define TRACE_ST_LogToConsole 2
+#define TRACE_ST false
 
-#if TRACE_ST
+#if TRACE_ST == 1
     #include <stdio.h>
     #include <time.h>
     FILE* _logFile;
@@ -41,6 +43,18 @@
         va_list ap;
         va_start(ap, format);
         vfprintf(_logFile, format, ap);
+    }
+#elif TRACE_ST == 2
+    #include <stdio.h>
+    #include <time.h>
+    bool isFirstLogToFile = true;
+
+    void inline LogToFile(const char* format, ...)
+    {
+
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
     }
 #else
     #define LogToFile(...)
@@ -251,9 +265,13 @@ DllExport int StreamWriter_WriteFrame(
     for (int i = 0; i < formatContextsCount; i++)
     {
         int ret = av_write_frame(formatContexts[i], packet);
+        LogToFile("Here2\n");
         if (ret < 0)
+        {
+            LogToFile("Here3\n");
             return ret;
+        }
     }
-
+    LogToFile("Here4\n");
     return 0;
 }
