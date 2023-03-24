@@ -296,6 +296,7 @@ public unsafe class AudioEncoder : IDisposable
         int frameSizeInSamples = -1;
         nint codecContext, packet, timebase, codecParameters, frame;
 
+        LoggingHelper.LogToCon("AudioEncoder_Constructor will be invoked");
         FFmpegImport.AudioEncoder_Constructor(
             encoderName,
             48000,
@@ -325,7 +326,8 @@ public unsafe class AudioEncoder : IDisposable
         bool success;
         fixed (byte* buf = &buffer.Array[buffer.Offset])
         {
-             success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
+            LoggingHelper.LogToCon("AudioEncoder_EncodeAndWriteFrame will be invoked");
+            success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
                 buf,
                 FrameSizeInBytes,
                 Channels,
@@ -357,6 +359,7 @@ public unsafe class AudioEncoder : IDisposable
 
     public void Dispose()
     {
+        LoggingHelper.LogToCon("AudioEncoder_Dispose will be invoked");
         FFmpegImport.AudioEncoder_Dispose(
             _packet, 
             _avFrame, 

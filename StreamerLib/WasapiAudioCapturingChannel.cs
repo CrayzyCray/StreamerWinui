@@ -12,7 +12,6 @@ public class WasapiAudioCapturingChannel
     public WaveFormat WaveFormat => _wasapiCapture.WaveFormat;
     public MMDevice MMDevice { get; }
     public float Volume { get; set; } = DefaultVolume;
-    //public Queue<ArraySegment<byte>> Buffers => _buffersQueue;
     public event EventHandler<WaveInEventArgs> DataAvailable;
     public CaptureState CaptureState => _wasapiCapture.CaptureState;
     public string DeviceFriendlyName { get; }
@@ -20,6 +19,7 @@ public class WasapiAudioCapturingChannel
     private AudioBufferSlicer _audioBufferSlicer;
     private WasapiCapture _wasapiCapture;
     private Queue<ArraySegment<byte>> _buffersQueue = new();
+    private object obj = new();
 
     public ArraySegment<byte> ReadNextBuffer()
     {
@@ -70,19 +70,20 @@ public class WasapiAudioCapturingChannel
         DataAvailable.Invoke(this, args);
     }
 
-    //public bool BufferIsAvailable => (_buffersQueue.Count > 0) ? true : false;
-
-    private object obj = new();
     public bool BufferIsAvailable
     {
         get
         {
+            LoggingHelper.LogToCon("g1");
             bool b = false;
+            LoggingHelper.LogToCon("g1.5");
             lock (obj)
             {
+                LoggingHelper.LogToCon("g2");
                 if (_buffersQueue.Count > 0)
                     b = true;
             }
+            LoggingHelper.LogToCon("g3");
             return b;
         }
     }

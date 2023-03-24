@@ -36,16 +36,16 @@ public class MasterChannel : IDisposable
             return null;
         var channel = new WasapiAudioCapturingChannel(device, _audioEncoder.FrameSizeInBytes);
         _audioChannels.Add(channel);
-        channel.DataAvailable += RecieveBuffer;
+        channel.DataAvailable += ReceiveBuffer;
         return channel;
     }
 
     public void RemoveChannel(WasapiAudioCapturingChannel capturingChannel)
     {
         if (!_audioChannels.Contains(capturingChannel))
-            throw new ArgumentException("MasterChannel not contains this WasapiAudioCapturingChannel");
+            throw new ArgumentException("MasterChannel not contains this WASAPIAudioCapturingChannel");
 
-        capturingChannel.DataAvailable -= RecieveBuffer;
+        capturingChannel.DataAvailable -= ReceiveBuffer;
         _audioChannels.Remove(capturingChannel);
     }
 
@@ -63,9 +63,9 @@ public class MasterChannel : IDisposable
         State = MasterChannelStates.Streaming;
     }
 
-    private void RecieveBuffer(object? sender, EventArgs e)
+    private void ReceiveBuffer(object? sender, EventArgs e)
     {
-        LoggingHelper.LogToCon($"ReceveBuffer event {(sender as WasapiAudioCapturingChannel).DeviceFriendlyName}");
+        LoggingHelper.LogToCon($"ReceiveBuffer event {(sender as WasapiAudioCapturingChannel).DeviceFriendlyName}");
 
         if (State != MasterChannelStates.Streaming)
         {
@@ -84,16 +84,16 @@ public class MasterChannel : IDisposable
         {
             _eventWaitHandle.WaitOne();
             
-            while (AllBuffersIsAvalibel())
+            while (AllBuffersIsAvailable())
             {
-                LoggingHelper.LogToCon("All devices have avalible buffer");
+                LoggingHelper.LogToCon("All devices have available buffer");
                 LoggingHelper.LogToCon($"Devices count: {_audioChannels.Count} list:");
                 // foreach (var channel in _audioChannels)
                 //     LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
 
                 var readBuffer = _audioChannels[0].ReadNextBuffer();
                 if (readBuffer == ArraySegment<byte>.Empty)
-                    LoggingHelper.LogToCon("array serment is empty");
+                    LoggingHelper.LogToCon("array segment is empty");
                 readBuffer.CopyTo(_masterBuffer, 0);
                 fixed (byte* ptr1 = _masterBuffer)
                 {
@@ -122,21 +122,28 @@ public class MasterChannel : IDisposable
                             masterBufferFloat[j] = -1f;
                     }
                     _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
+                    LoggingHelper.LogToCon("1");
                 }
+                LoggingHelper.LogToCon("2");
             }
+            LoggingHelper.LogToCon("Mixer method finished");
         }
         //LoggingHelper.LogToCon("Devices list:");
         //foreach (var channel in _audioChannels)
         //    LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
 
-        LoggingHelper.LogToCon("Mixer method finished");
+        
     }
 
-    private bool AllBuffersIsAvalibel()
+    private bool AllBuffersIsAvailable()
     {
         for (int i = 0; i < _audioChannels.Count; i++)
+        {
             if (!_audioChannels[i].BufferIsAvailable)
+            {
                 return false;
+            }
+        }
         return true;
     }
 

@@ -72,7 +72,7 @@ public class StreamController
         
         _streamIsActive = true;
         
-        //if _masterChannel not set, then setup defoult audio output device
+        //if _masterChannel not set, then setup default audio output device
         if (_masterChannel == null)
         {
             _masterChannel = new MasterChannel(_streamWriter, DefaultAudioEncoder);

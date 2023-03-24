@@ -2,15 +2,15 @@
 using static StreamerLib.StreamWriter;
 
 namespace StreamerLib;
-public static unsafe partial class FFmpegImport
+public static unsafe class FFmpegImportLegacy
 {
     private const string DllPath = "DLLs/Dll.dll";
 
-    [LibraryImport(DllPath)]
-    public static partial void Here();
+    [DllImport(DllPath)]
+    public static extern void Here();
     
-    [LibraryImport(DllPath)]
-    internal static partial int AudioEncoder_Constructor(
+    [DllImport(DllPath)]
+    internal static extern int AudioEncoder_Constructor(
         [MarshalAs(UnmanagedType.LPStr)] String encoderName,
         int _sampleRate,
         int channels,
@@ -21,17 +21,17 @@ public static unsafe partial class FFmpegImport
         nint* _codecParametersOut,
         nint* _avFrameOut);
 
-    [LibraryImport(DllPath)]
-    internal static partial int AudioEncoder_Dispose(
+    [DllImport(DllPath)]
+    internal static extern int AudioEncoder_Dispose(
         nint packet,
         nint frame,
         nint codecContext,
         nint codecPatameters,
         nint timebase);
 
-    [LibraryImport(DllPath)]
+    [DllImport(DllPath)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static partial bool AudioEncoder_EncodeAndWriteFrame(
+    internal static extern bool AudioEncoder_EncodeAndWriteFrame(
         byte* buffer,
         int frameSizeInBytes,
         int channels,
@@ -41,28 +41,28 @@ public static unsafe partial class FFmpegImport
         nint packet,
         nint frame);
 
-    [LibraryImport(DllPath)]
-    internal static partial int StreamWriter_AddClient(
+    [DllImport(DllPath)]
+    internal static extern int StreamWriter_AddClient(
         [MarshalAs(UnmanagedType.LPStr)] String outputUrl,
         nint* formatContextOut,
         StreamParameters* streamParameters,
         int streamParametersSize);
 
-    [LibraryImport(DllPath)]
-    internal static partial int StreamWriter_AddClientAsFile(
+    [DllImport(DllPath)]
+    internal static extern int StreamWriter_AddClientAsFile(
         [MarshalAs(UnmanagedType.LPStr)] String outputUrl,
         nint* formatContextOut,
         StreamParameters* streamParameters,
         int streamParametersSize);
 
-    [LibraryImport(DllPath)]
-    internal static partial int StreamWriter_WriteFrame(
+    [DllImport(DllPath)]
+    internal static extern int StreamWriter_WriteFrame(
         nint packet,
         nint packetTimeBase,
         nint streamTimeBase,
         nint[] formatContexts,
         int formatContextsCount);
 
-    [LibraryImport(DllPath)]
-    internal static partial int StreamWriter_CloseFormatContext(nint formatContext);
+    [DllImport(DllPath)]
+    internal static extern int StreamWriter_CloseFormatContext(nint formatContext);
 }
