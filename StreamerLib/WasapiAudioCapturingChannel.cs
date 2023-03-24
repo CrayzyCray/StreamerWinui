@@ -92,9 +92,9 @@ public class WasapiAudioCapturingChannel
     {
         fixed (byte* ptr = buffer)
         {
-            float* ptrFloat = (float*)ptr;
+            float* bufferFloat = (float*)ptr;
             for (int i = 0; i < bufferSize / 4; i++)
-                ptrFloat[i] *= volume;
+                bufferFloat[i] *= volume;
         }
     }
 

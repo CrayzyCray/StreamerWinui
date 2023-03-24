@@ -87,6 +87,7 @@ public class StreamController
     {
         _masterChannel.Dispose();
         _streamWriter.Stop();
+        _streamIsActive = false;
     }
 
     public bool AddClient(IPAddress ipAddress, int port = StreamWriter.DefaultPort) => _streamWriter.AddClient(ipAddress, port);

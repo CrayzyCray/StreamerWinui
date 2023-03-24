@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
 using NAudio.CoreAudioApi;
-using System.Diagnostics;
 
 namespace StreamerLib;
 
@@ -8,7 +6,7 @@ public class MasterChannel : IDisposable
 {
     public const int SampleSizeInBytes = 4;
 
-    public List<WasapiAudioCapturingChannel> AudioChannels => _audioChannels;
+    //public List<WasapiAudioCapturingChannel> AudioChannels => _audioChannels;
     public int FrameSizeInBytes => _audioEncoder.FrameSizeInBytes;
     public StreamWriter StreamWriter { get; }
     public Encoders Encoder { get; }
@@ -49,18 +47,17 @@ public class MasterChannel : IDisposable
         _audioChannels.Remove(capturingChannel);
     }
 
-    public void DeleteAllChannels()
-    {
-        Dispose();
-        _audioChannels.Clear();
-    }
-
     internal void StartStreaming()
     {
         foreach (var channel in _audioChannels)
             if (channel.CaptureState == CaptureState.Stopped)
                 channel.StartRecording();
         State = MasterChannelStates.Streaming;
+    }
+    
+    internal void StopStreaming()
+    {
+        State = MasterChannelStates.Monitoring;
     }
 
     private void ReceiveBuffer(object? sender, EventArgs e)
@@ -85,54 +82,53 @@ public class MasterChannel : IDisposable
             _eventWaitHandle.WaitOne();
             
             while (AllBuffersIsAvailable())
-            {
-                LoggingHelper.LogToCon("All devices have available buffer");
-                LoggingHelper.LogToCon($"Devices count: {_audioChannels.Count} list:");
-                // foreach (var channel in _audioChannels)
-                //     LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
-
-                var readBuffer = _audioChannels[0].ReadNextBuffer();
-                if (readBuffer == ArraySegment<byte>.Empty)
-                    LoggingHelper.LogToCon("array segment is empty");
-                readBuffer.CopyTo(_masterBuffer, 0);
-                fixed (byte* ptr1 = _masterBuffer)
-                {
-                    float* masterBufferFloat = (float*)ptr1;
-
-                    for (int i = 1; i < _audioChannels.Count; i++)
-                    {
-                        var buffer = _audioChannels[i].ReadNextBuffer();
-
-                        fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
-                        {
-                            float* bufferFloat = (float*)ptr2;
-                            for (int j = 0; j < _masterBuffer.Length; j++)
-                            {
-                                masterBufferFloat[j] += bufferFloat[j];
-                            }
-                        }
-                    }
-
-                    //clipping
-                    for (int j = 0; j < _masterBuffer.Length; j++)
-                    {
-                        if (masterBufferFloat[j] > 1f)
-                            masterBufferFloat[j] = 1f;
-                        else if (masterBufferFloat[j] < -1f)
-                            masterBufferFloat[j] = -1f;
-                    }
-                    _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
-                    LoggingHelper.LogToCon("1");
-                }
-                LoggingHelper.LogToCon("2");
-            }
-            LoggingHelper.LogToCon("Mixer method finished");
+                Mix();
         }
-        //LoggingHelper.LogToCon("Devices list:");
-        //foreach (var channel in _audioChannels)
-        //    LoggingHelper.LogToCon($"    name: {channel.MMDevice.FriendlyName} buffers: {channel.Buffers.Count}");
 
-        
+        void Mix()
+        {
+            var readBuffer = _audioChannels[0].ReadNextBuffer();
+            readBuffer.CopyTo(_masterBuffer, 0);
+
+            fixed (byte* ptr1 = _masterBuffer)
+            {
+                float* masterBufferFloat = (float*)ptr1;
+
+                for (int i = 1; i < _audioChannels.Count; i++)
+                {
+                    var buffer = _audioChannels[i].ReadNextBuffer();
+
+                    fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
+                    {
+                        float* bufferFloat = (float*)ptr2;
+                        AddBuffer(masterBufferFloat, bufferFloat, _masterBuffer.Length);
+                    }
+                }
+
+                ClipBuffer(masterBufferFloat, _masterBuffer.Length);
+                
+                _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
+            }
+
+            void AddBuffer(float* destonation, float* source, int length)
+            {
+                for (int j = 0; j < length; j++)
+                {
+                    destonation[j] += source[j];
+                }
+            }
+
+            void ClipBuffer(float* buffer, int length)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    if (buffer[i] > 1f)
+                        buffer[i] = 1f;
+                    else if (buffer[i] < -1f)
+                        buffer[i] = -1f;
+                }
+            }
+        }
     }
 
     private bool AllBuffersIsAvailable()

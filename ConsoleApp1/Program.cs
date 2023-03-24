@@ -7,16 +7,16 @@ internal class ConsoleApp1
     {
         var sc = new StreamController();
         sc.AudioCapturing = true;
-        //var masterChannel = sc.MasterChannel;
-        //var mmDevice1 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        //var mmDevice2 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
-        //masterChannel.AddChannel(mmDevice1);
+        var masterChannel = sc.MasterChannel;
+        var mmDevice1 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        var mmDevice2 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
+        masterChannel.AddChannel(mmDevice1);
         //masterChannel.AddChannel(mmDevice2);
         sc.StartStream();
         sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
-        Thread.Sleep(3000);
+        //Thread.Sleep(3000);
         //Console.WriteLine("Press any key to stop");
-        //Console.ReadKey();
+        Console.ReadKey();
         sc.StopStream();
     }
 

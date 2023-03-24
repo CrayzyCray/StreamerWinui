@@ -12,11 +12,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9274197f-b926-4229-9fd0-b374b9013392" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ConsoleApp1/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ConsoleApp1/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/FFmpegImport.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/FFmpegImport.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.dll" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/StreamController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,35 +27,40 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/346e1baf23cb485c9698d757bd5611bd2e000/e8/057db464/WaveBuffer.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/36e740b59df23626d207e72ea77e34298e53dd99db463eee529f8c416b5664/ThrowHelper.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/70f617fc68cf47c4af27e06f2b56f801b1c8a8/_50a68/EventResetMode.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/c3b2a4cdcf127e28515dc4657830cb28309c97b930e7b89a3f664eda6c5172/Thread.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/StreamerLib/FFmpegImport.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="SWEA" />
   </component>
   <component name="ProjectId" id="2NSssbOzPz7GqBOoD8lCJd79Bck" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "XThreadsFramesViewSplitterKey": "0.34762633",
-    "settings.editor.selected.configurable": "editing.templates",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;XThreadsFramesViewSplitterKey&quot;: &quot;0.34762633&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;editing.templates&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache",
-      "C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache",
-      "C:\\Users\\Cray\\AppData\\Local\\Symbols\\src"
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache&quot;,
+      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\Cray\\AppData\\Local\\Symbols\\src&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected=".NET Project.ConsoleApp1">
     <configuration name="StreamerWinui: win10-x64" type="DotNetMsBuildPublish" factoryName="Publish to IIS">
       <riderPublish publish_profile="win10-x64.pubxml" pubxml_path="$PROJECT_DIR$/StreamerWinui/Properties/PublishProfiles/win10-x64.pubxml" uuid_high="-2582124705845719937" uuid_low="-5866505617693931236" />
@@ -138,6 +146,7 @@
       <option name="presentableId" value="Default" />
       <updated>1679669027446</updated>
       <workItem from="1679669028788" duration="4840000" />
+      <workItem from="1679696130753" duration="3695000" />
     </task>
     <servers />
   </component>

@@ -16,27 +16,27 @@ public sealed partial class MixerChannel : UserControl
     const int _width = 352;
     const int _height = 70;
 
-    public MixerChannel(MMDevice mmDevice, int frameSizeInBytes)
-    {
-        if (mmDevice.DataFlow == DataFlow.All)
-            throw new Exception("Wrong mmDevice.DataFlow");
+    //public MixerChannel(MMDevice mmDevice, int frameSizeInBytes)
+    //{
+    //    if (mmDevice.DataFlow == DataFlow.All)
+    //        throw new Exception("Wrong mmDevice.DataFlow");
 
-        WasapiAudioCapturingChannel = new(mmDevice, frameSizeInBytes);
-        WasapiAudioCapturingChannel.StartRecording();
-        WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
+    //    WasapiAudioCapturingChannel = new(mmDevice, frameSizeInBytes);
+    //    WasapiAudioCapturingChannel.StartRecording();
+    //    WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
 
-        this.InitializeComponent();
+    //    this.InitializeComponent();
 
-        DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
-    }
+    //    DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
+    //}
 
     public MixerChannel(WasapiAudioCapturingChannel wasapiAudioCapturingChannel)
     {
         this.InitializeComponent();
 
         wasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
-        if (wasapiAudioCapturingChannel.CaptureState == CaptureState.Stopped)
-            wasapiAudioCapturingChannel.StartRecording();
+        //if (wasapiAudioCapturingChannel.CaptureState == CaptureState.Stopped)
+        //    wasapiAudioCapturingChannel.StartRecording();
 
         DeviceNameTextBlock.Text = wasapiAudioCapturingChannel.MMDevice.FriendlyName;
         WasapiAudioCapturingChannel = wasapiAudioCapturingChannel;
