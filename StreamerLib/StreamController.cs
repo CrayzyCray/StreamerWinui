@@ -10,7 +10,7 @@ public class StreamController
     
     public bool StreamIsActive => _streamIsActive;
     /// <summary>
-    /// if 0 then used defaul value
+    /// if 0 then used default value
     /// </summary>
     public int Framerate
     {
@@ -18,10 +18,10 @@ public class StreamController
         set => _framerate = (value >= 0) ? value : _framerate;
     }
     
-    public double ResolutionMultiplyer
+    public double ResolutionMultiplier
     {
-        get => _resolutionMultiplyer;
-        set => _resolutionMultiplyer = (value is > 0 and <= 1) ? value : _resolutionMultiplyer;
+        get => _resolutionMultiplier;
+        set => _resolutionMultiplier = (value is > 0 and <= 1) ? value : _resolutionMultiplier;
     }
     
     public bool AudioCapturing
@@ -60,7 +60,7 @@ public class StreamController
     private bool _streamIsActive;
     private int _framerate = 0;
     private Size _cropResolution;
-    private double _resolutionMultiplyer = 1;
+    private double _resolutionMultiplier = 1;
     //private Ddagrab _ddagrab;
     //private HardwareEncoder _hardwareEncoder;
     private StreamWriter _streamWriter = new();

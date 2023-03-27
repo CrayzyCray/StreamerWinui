@@ -13,13 +13,6 @@
   <component name="ChangeListManager">
     <list default="true" id="9274197f-b926-4229-9fd0-b374b9013392" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ConsoleApp1/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ConsoleApp1/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.dll" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/StreamController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,23 +37,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;XThreadsFramesViewSplitterKey&quot;: &quot;0.34762633&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editing.templates&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "XThreadsFramesViewSplitterKey": "0.34762633",
+    "settings.editor.selected.configurable": "reference.idesettings.emmet",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;rider.external.source.directories&quot;: [
-      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache&quot;,
-      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache&quot;,
-      &quot;C:\\Users\\Cray\\AppData\\Local\\Symbols\\src&quot;
+  "keyToStringList": {
+    "rider.external.source.directories": [
+      "C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache",
+      "C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache",
+      "C:\\Users\\Cray\\AppData\\Local\\Symbols\\src"
     ]
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected=".NET Project.ConsoleApp1">
     <configuration name="StreamerWinui: win10-x64" type="DotNetMsBuildPublish" factoryName="Publish to IIS">
       <riderPublish publish_profile="win10-x64.pubxml" pubxml_path="$PROJECT_DIR$/StreamerWinui/Properties/PublishProfiles/win10-x64.pubxml" uuid_high="-2582124705845719937" uuid_low="-5866505617693931236" />
@@ -147,6 +140,7 @@
       <updated>1679669027446</updated>
       <workItem from="1679669028788" duration="4840000" />
       <workItem from="1679696130753" duration="3695000" />
+      <workItem from="1679741258071" duration="762000" />
     </task>
     <servers />
   </component>

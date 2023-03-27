@@ -1,5 +1,6 @@
 ﻿using NAudio.CoreAudioApi;
 using StreamerLib;
+using static System.Net.Mime.MediaTypeNames;
 
 internal class ConsoleApp1
 {
@@ -11,7 +12,7 @@ internal class ConsoleApp1
         var mmDevice1 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
         var mmDevice2 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
         masterChannel.AddChannel(mmDevice1);
-        //masterChannel.AddChannel(mmDevice2);
+        masterChannel.AddChannel(mmDevice2);
         sc.StartStream();
         sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
         //Thread.Sleep(3000);
@@ -20,7 +21,19 @@ internal class ConsoleApp1
         sc.StopStream();
     }
 
-    void Test()
+    static void Test2()
+    {
+        A a = new A();
+        var s = new ArraySegment<byte>(a.bytes);
+        a.bytes = new byte[2];
+    }
+
+    class A
+    {
+        public byte[] bytes = { 1, 2};
+    }
+
+    static void Test()
     {
         EventWaitHandle eventWaitHandle = new(false, EventResetMode.AutoReset);
         int a = 0;

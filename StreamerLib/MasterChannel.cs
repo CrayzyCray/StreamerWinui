@@ -16,7 +16,7 @@ public class MasterChannel : IDisposable
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
     private Task _mixerThread;
-    private EventWaitHandle _eventWaitHandle = new(false, EventResetMode.AutoReset);
+    private EventWaitHandle _eventWaitHandle = new(false, EventResetMode.ManualReset);
 
     public MasterChannel(StreamWriter streamWriter, Encoders encoder)
     {
@@ -83,6 +83,8 @@ public class MasterChannel : IDisposable
             
             while (AllBuffersIsAvailable())
                 Mix();
+
+            _eventWaitHandle.Reset();
         }
 
         void Mix()
@@ -112,9 +114,9 @@ public class MasterChannel : IDisposable
 
             void AddBuffer(float* destonation, float* source, int length)
             {
-                for (int j = 0; j < length; j++)
+                for (int i = 0; i < length; i++)
                 {
-                    destonation[j] += source[j];
+                    destonation[i] += source[i];
                 }
             }
 

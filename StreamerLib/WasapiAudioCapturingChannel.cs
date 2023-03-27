@@ -6,7 +6,7 @@ namespace StreamerLib;
 public class WasapiAudioCapturingChannel
 {
     public const float DefaultVolume = 1f;
-    public const int QueueMaximumCapacity = 32;
+    public const int QueueMaximumCapacity = 16;
 
     public int Channels => _wasapiCapture.WaveFormat.Channels;
     public WaveFormat WaveFormat => _wasapiCapture.WaveFormat;
@@ -16,7 +16,7 @@ public class WasapiAudioCapturingChannel
     public CaptureState CaptureState => _wasapiCapture.CaptureState;
     public string DeviceFriendlyName { get; }
 
-    private AudioBufferSlicer _audioBufferSlicer;
+    private AudioBufferSlicer2 _audioBufferSlicer;
     private WasapiCapture _wasapiCapture;
     private Queue<ArraySegment<byte>> _buffersQueue = new();
     private object obj = new();
@@ -45,7 +45,7 @@ public class WasapiAudioCapturingChannel
 
         MMDevice = mmDevice;
         DeviceFriendlyName = mmDevice.FriendlyName;
-        _audioBufferSlicer = new AudioBufferSlicer(frameSizeInBytes);
+        _audioBufferSlicer = new(frameSizeInBytes);
         _wasapiCapture.DataAvailable += _wasapiCapture_DataAvailable;
     }
 

@@ -82,128 +82,6 @@ public unsafe struct Ddagrab : IDisposable
 }
 */
 
-internal class AudioBufferSlicer
-{
-    public byte[] Buffer => _buffer.InternalArray;
-    public byte[] OriginalArray => _originalArray;
-    public bool BufferIsFull => _buffer.IsFull;
-    public int BufferedCount => _bufferSecond.Buffered;
-    public int SliceSizeInBytes => _sliceSizeInBytes;
-    
-    private Buffer<byte> _buffer;
-    private Buffer<byte> _bufferSecond;
-    private int _sliceSizeInBytes;
-    private byte[] _originalArray = Array.Empty<byte>();
-    
-    public AudioBufferSlicer(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
-    {
-        int sizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
-        _buffer = new(sizeInBytes);
-        _bufferSecond = new(sizeInBytes);
-        _sliceSizeInBytes = sizeInBytes;
-    }
-    
-    public AudioBufferSlicer(int sizeInBytes)
-    {
-        _buffer = new(sizeInBytes);
-        _bufferSecond = new(sizeInBytes);
-        _sliceSizeInBytes = sizeInBytes;
-    }
-    
-    public List<ArraySegment<byte>> SliceBufferToArraySegments(byte[] buffer, int bufferLength)
-    {
-        _originalArray = buffer;
-        int bytesWritedInBufferMode = 0;
-        
-        if (_buffer.IsFull)
-            _buffer.Clear();
-
-        int retSize = (bufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes +
-                      Convert.ToInt32(_buffer.IsFull);
-        List<ArraySegment<byte>> buffersList = new List<ArraySegment<byte>>(retSize);
-        
-        //swap buffers
-        (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
-        
-        if (_buffer.NotEmpty)
-        {
-            bytesWritedInBufferMode = _buffer.SizeRemain;
-            _buffer.FillToEnd(buffer, bufferLength);
-            buffersList.Add(new ArraySegment<byte>(_buffer.InternalArray));
-        }
-
-        for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= bufferLength; i += _sliceSizeInBytes)
-            buffersList.Add(new ArraySegment<byte>(buffer, i, _sliceSizeInBytes));
-        
-        int index = bufferLength - (bufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes;
-        _bufferSecond.Fill(buffer, bufferLength, index, bufferLength - index);
-        
-        return buffersList;
-    }
-
-    public void Clear()
-    {
-        _buffer.Clear();
-        _bufferSecond.Clear();
-        _originalArray = Array.Empty<byte>();
-
-    }
-}
-
-internal class Buffer<T>
-{
-    public T[] InternalArray => _buffer;
-    public int Buffered => _nextElementPointer;
-    public int Size => _buffer.Length;
-    public int SizeRemain => Size - Buffered;
-    public bool IsEmpty => Buffered == 0;
-    public bool NotEmpty => Buffered != 0;
-    public bool IsFull => Buffered == Size;
-
-    public ref T this[int index] => ref _buffer[index];
-        
-    private T[] _buffer;
-    private int _nextElementPointer = 0;
-
-    public void Clear()
-    {
-        _nextElementPointer = 0;
-    }
-
-    public void Append(in T value)
-    {
-        if (_nextElementPointer >= _buffer.Length)
-            throw new Exception("buffer overflowed");
-        _buffer[_nextElementPointer] = value;
-        _nextElementPointer++;
-    }
-    
-    
-    /// <returns>Count of buffered items</returns>
-    public int FillToEnd(T[] buffer, int bufferLength)
-    {
-        if (bufferLength < SizeRemain)
-            throw new ArgumentException("BufferLength less than need for fill");
-        int ret = SizeRemain;
-        Array.Copy(buffer, 0, _buffer, _nextElementPointer, SizeRemain);
-        _nextElementPointer = _buffer.Length;
-        return ret;
-    }
-
-    public void Fill(T[] buffer, int bufferLength, int index, int length)
-    {
-        if (index + length > bufferLength || length > SizeRemain)
-            throw new ArgumentOutOfRangeException();
-        Array.Copy(buffer, index, _buffer, _nextElementPointer, length);
-        _nextElementPointer += length;
-    }
-
-    public Buffer(int size)
-    {
-        _buffer = new T[size];
-    }
-}
-
 /*
 public unsafe struct HardwareEncoder : IDisposable
 {
@@ -323,6 +201,9 @@ public unsafe class AudioEncoder : IDisposable
 
     public void EncodeAndWriteFrame(ArraySegment<byte> buffer)
     {
+        if (buffer.Count != FrameSizeInBytes)
+            throw new ArgumentException();
+
         bool success;
         fixed (byte* buf = &buffer.Array[buffer.Offset])
         {
@@ -342,19 +223,32 @@ public unsafe class AudioEncoder : IDisposable
         }
 
         _pts += FrameSizeInSamples;
-        //fixed(byte* buf = &buffer.Array[buffer.Offset])
-        //    ffmpeg.avcodec_fill_audio_frame(_avFrame, Channels, SampleFormat, buf, FrameSizeInBytes, 1);
-        //_avFrame->pts = _pts;
-        //ffmpeg.avcodec_send_frame(_codecContext, _avFrame);
+    }
 
-        //if (ffmpeg.avcodec_receive_packet(_codecContext, _packet) == 0)
-        //{
-        //    _packet->stream_index = StreamIndex;
-        //    _streamWriter.WriteFrame(_packet, _timebase);
-        //    ffmpeg.av_packet_unref(_packet);
-        //}
+    public void EncodeAndWriteFrame(byte[] buffer)
+    {
+        if (buffer.Length != FrameSizeInBytes)
+            throw new ArgumentException();
 
-        //_pts += _codecContext->frame_size;
+        bool success;
+        fixed (byte* buf = buffer)
+        {
+            LoggingHelper.LogToCon("AudioEncoder_EncodeAndWriteFrame will be invoked");
+            success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
+                buf,
+                FrameSizeInBytes,
+                Channels,
+                StreamIndex,
+                _pts,
+                _codecContext,
+                _packet,
+                _avFrame);
+
+            if (success)
+                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
+        }
+
+        _pts += FrameSizeInSamples;
     }
 
     public void Dispose()
