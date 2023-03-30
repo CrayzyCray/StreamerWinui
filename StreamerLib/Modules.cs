@@ -174,7 +174,6 @@ public unsafe class AudioEncoder : IDisposable
         int frameSizeInSamples = -1;
         nint codecContext, packet, timebase, codecParameters, frame;
 
-        LoggingHelper.LogToCon("AudioEncoder_Constructor will be invoked");
         FFmpegImport.AudioEncoder_Constructor(
             encoderName,
             48000,
@@ -191,7 +190,7 @@ public unsafe class AudioEncoder : IDisposable
         _timebase = timebase;
         _codecParameters = codecParameters;
         _avFrame = frame;
-
+        
         FrameSizeInSamples = frameSizeInSamples;
         FrameSizeInBytes = frameSizeInSamples * channels * SampleSizeInBytes;
         
@@ -207,15 +206,14 @@ public unsafe class AudioEncoder : IDisposable
         bool success;
         fixed (byte* buf = &buffer.Array[buffer.Offset])
         {
-            LoggingHelper.LogToCon("AudioEncoder_EncodeAndWriteFrame will be invoked");
-            success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
+            success = FFmpegImportLegacy.AudioEncoder_EncodeAndWriteFrame(
                 buf,
                 FrameSizeInBytes,
                 Channels,
                 StreamIndex,
                 _pts,
-                _codecContext, 
-                _packet, 
+                _codecContext,
+                _packet,
                 _avFrame);
 
             if (success)
@@ -233,7 +231,6 @@ public unsafe class AudioEncoder : IDisposable
         bool success;
         fixed (byte* buf = buffer)
         {
-            LoggingHelper.LogToCon("AudioEncoder_EncodeAndWriteFrame will be invoked");
             success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
                 buf,
                 FrameSizeInBytes,
@@ -243,7 +240,6 @@ public unsafe class AudioEncoder : IDisposable
                 _codecContext,
                 _packet,
                 _avFrame);
-
             if (success)
                 _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
         }
@@ -253,7 +249,6 @@ public unsafe class AudioEncoder : IDisposable
 
     public void Dispose()
     {
-        LoggingHelper.LogToCon("AudioEncoder_Dispose will be invoked");
         FFmpegImport.AudioEncoder_Dispose(
             _packet, 
             _avFrame, 

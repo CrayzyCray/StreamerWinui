@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "StreamerLib": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

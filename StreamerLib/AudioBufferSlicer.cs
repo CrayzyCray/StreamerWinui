@@ -1,6 +1,6 @@
 ﻿namespace StreamerLib;
 
-internal class AudioBufferSlicer
+public class AudioBufferSlicer
 {
     public byte[] Buffer => _buffer.Array;
     public byte[] OriginalArray => _originalArray;
@@ -64,67 +64,44 @@ internal class AudioBufferSlicer
         _buffer.Clear();
         _bufferSecond.Clear();
         _originalArray = Array.Empty<byte>();
-
     }
 }
 
-internal class AudioBufferSlicer2
+public class AudioBufferSlicer2
 {
-    public byte[] Buffer => _buffer.Array;
-    public byte[] OriginalArray => _originalArray;
-    public bool BufferIsFull => _buffer.IsFull;
-    public int BufferedCount => _bufferSecond.Buffered;
-    public int SliceSizeInBytes => _sliceSizeInBytes;
+    public int SliceSizeInBytes { get; }
 
     private Buffer<byte> _buffer;
     private Buffer<byte> _bufferSecond;
-    private int _sliceSizeInBytes;
-    private byte[] _originalArray = Array.Empty<byte>();
-
-    public AudioBufferSlicer2(int SliceSizeInSamples, int SampleSizeInBytes, int Channels)
-    {
-        _sliceSizeInBytes = SliceSizeInSamples * SampleSizeInBytes * Channels;
-        AllocateBuffers(_sliceSizeInBytes);
-    }
 
     public AudioBufferSlicer2(int sizeInBytes)
     {
-        _sliceSizeInBytes = sizeInBytes;
-        AllocateBuffers(_sliceSizeInBytes);
-    }
-
-    private void AllocateBuffers(int size)
-    {
-        _buffer = new(size);
-        _bufferSecond = new(size);
+        SliceSizeInBytes = sizeInBytes;
+        _buffer = new(SliceSizeInBytes);
+        _bufferSecond = new(SliceSizeInBytes);
     }
 
     public List<ArraySegment<byte>> SliceBufferToArraySegments(byte[] buffer, int bufferLength)
     {
-        _originalArray = buffer;
-        int bytesWritedInBufferMode = 0;
-
-        //swap buffers
         (_buffer, _bufferSecond) = (_bufferSecond, _buffer);
 
         if (_bufferSecond.IsFull)
-            _bufferSecond = new(_sliceSizeInBytes);
+            _bufferSecond = new(SliceSizeInBytes);
 
-
-        int retSize = (bufferLength - bytesWritedInBufferMode) / _sliceSizeInBytes + 1;//+1 for buffer
+        int bytesWrittenInBufferMode = (_buffer.NotEmpty) ? _buffer.SizeRemain : 0;
+        int retSize = (bufferLength - bytesWrittenInBufferMode) / SliceSizeInBytes + 1;
         List<ArraySegment<byte>> segmentsList = new List<ArraySegment<byte>>(retSize);
-
 
         if (_buffer.NotEmpty)
         {
-            bytesWritedInBufferMode = _buffer.FillToEnd(buffer, bufferLength);
+            _buffer.FillToEnd(buffer, bufferLength);
             segmentsList.Add(new ArraySegment<byte>(_buffer.Array));
         }
 
-        for (int i = bytesWritedInBufferMode; i + _sliceSizeInBytes <= bufferLength; i += _sliceSizeInBytes)
-            segmentsList.Add(new ArraySegment<byte>(buffer, i, _sliceSizeInBytes));
+        for (int i = bytesWrittenInBufferMode; i + SliceSizeInBytes <= bufferLength; i += SliceSizeInBytes)
+            segmentsList.Add(new ArraySegment<byte>(buffer, i, SliceSizeInBytes));
 
-        int indexOfLastBufferedSample = bufferLength - (bufferLength - bytesWritedInBufferMode) % _sliceSizeInBytes;
+        int indexOfLastBufferedSample = bufferLength - (bufferLength - bytesWrittenInBufferMode) % SliceSizeInBytes;
 
         if (indexOfLastBufferedSample < bufferLength)
             _bufferSecond.Fill(buffer, bufferLength, indexOfLastBufferedSample, bufferLength - indexOfLastBufferedSample);
@@ -134,8 +111,7 @@ internal class AudioBufferSlicer2
 
     public void Clear()
     {
-        _buffer.Clear();
-        _bufferSecond.Clear();
-        _originalArray = Array.Empty<byte>();
+        _buffer = new(SliceSizeInBytes);
+        _bufferSecond = new(SliceSizeInBytes);
     }
 }

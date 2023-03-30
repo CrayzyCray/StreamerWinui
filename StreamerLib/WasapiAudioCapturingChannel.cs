@@ -15,11 +15,12 @@ public class WasapiAudioCapturingChannel
     public event EventHandler<WaveInEventArgs> DataAvailable;
     public CaptureState CaptureState => _wasapiCapture.CaptureState;
     public string DeviceFriendlyName { get; }
+    public Queue<ArraySegment<byte>> Queue => _buffersQueue;
 
     private AudioBufferSlicer2 _audioBufferSlicer;
     private WasapiCapture _wasapiCapture;
     private Queue<ArraySegment<byte>> _buffersQueue = new();
-    private object obj = new();
+    private object queueLock = new();
 
     public ArraySegment<byte> ReadNextBuffer()
     {
@@ -27,12 +28,32 @@ public class WasapiAudioCapturingChannel
             throw new Exception("Buffer is not available");
         if (_wasapiCapture.CaptureState == CaptureState.Stopped)
             throw new Exception("CaptureState.Stopped");
-        ArraySegment<byte> buffer;
-        lock (obj)
-        {
-            buffer = _buffersQueue.Dequeue();
-        }
+        var buffer = Dequeue();
         return buffer;
+    }
+
+    private ArraySegment<byte> Dequeue()
+    {
+        
+        lock (queueLock)
+        {
+            if (_buffersQueue.Count == 0)
+                throw new Exception();
+            return _buffersQueue.Dequeue();
+        }
+    }
+
+    private void Enqueue(List<ArraySegment<byte>> buffers)
+    {
+        lock (queueLock)
+        {
+            if (_buffersQueue.Count + buffers.Count > QueueMaximumCapacity)
+            {
+                _buffersQueue.Clear();
+            }
+            foreach (var buffer in buffers)
+                _buffersQueue.Enqueue(buffer);
+        }
     }
 
     public WasapiAudioCapturingChannel(MMDevice mmDevice, int frameSizeInBytes)
@@ -57,34 +78,18 @@ public class WasapiAudioCapturingChannel
             ApplyVolume(args.Buffer, args.BytesRecorded, Volume);
 
         var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(args.Buffer, args.BytesRecorded);
-        lock (obj)
-        {
-            if (_buffersQueue.Count + buffersList.Count > QueueMaximumCapacity)
-            {
-                _buffersQueue.Clear();
-                LoggingHelper.LogToCon("buffer queue cleared");
-            }
-            foreach (var item in buffersList)
-                _buffersQueue.Enqueue(item);
-        }
+        Enqueue(buffersList);
         DataAvailable.Invoke(this, args);
     }
 
-    public bool BufferIsAvailable
+    public bool BufferIsAvailable 
     {
         get
         {
-            LoggingHelper.LogToCon("g1");
-            bool b = false;
-            LoggingHelper.LogToCon("g1.5");
-            lock (obj)
+            lock (queueLock)
             {
-                LoggingHelper.LogToCon("g2");
-                if (_buffersQueue.Count > 0)
-                    b = true;
+                return _buffersQueue.Count > 0;
             }
-            LoggingHelper.LogToCon("g3");
-            return b;
         }
     }
 

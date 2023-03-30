@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <StartupObject>ConsoleApp1</StartupObject>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <Platforms>AnyCPU</Platforms>
+    <Platforms>AnyCPU;x64</Platforms>
     <Configurations>Debug;Release;Debug TRACE_ON</Configurations>
   </PropertyGroup>
 

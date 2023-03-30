@@ -4,13 +4,13 @@ using static StreamerLib.StreamWriter;
 namespace StreamerLib;
 public static unsafe class FFmpegImportLegacy
 {
-    private const string DllPath = "DLLs/Dll.dll";
+    private const string DllPath = "C:\\Users\\Cray\\source\\repos\\Github\\StreamerWinui\\StreamerLib\\DLLs\\Dll.dll";//"DLLs/Dll.dll";
 
     [DllImport(DllPath)]
     public static extern void Here();
     
     [DllImport(DllPath)]
-    internal static extern int AudioEncoder_Constructor(
+    public static extern int AudioEncoder_Constructor(
         [MarshalAs(UnmanagedType.LPStr)] String encoderName,
         int _sampleRate,
         int channels,
@@ -22,7 +22,7 @@ public static unsafe class FFmpegImportLegacy
         nint* _avFrameOut);
 
     [DllImport(DllPath)]
-    internal static extern int AudioEncoder_Dispose(
+    public static extern int AudioEncoder_Dispose(
         nint packet,
         nint frame,
         nint codecContext,
@@ -31,7 +31,7 @@ public static unsafe class FFmpegImportLegacy
 
     [DllImport(DllPath)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool AudioEncoder_EncodeAndWriteFrame(
+    public static extern bool AudioEncoder_EncodeAndWriteFrame(
         byte* buffer,
         int frameSizeInBytes,
         int channels,
@@ -42,21 +42,21 @@ public static unsafe class FFmpegImportLegacy
         nint frame);
 
     [DllImport(DllPath)]
-    internal static extern int StreamWriter_AddClient(
+    public static extern int StreamWriter_AddClient(
         [MarshalAs(UnmanagedType.LPStr)] String outputUrl,
         nint* formatContextOut,
         StreamParameters* streamParameters,
         int streamParametersSize);
 
     [DllImport(DllPath)]
-    internal static extern int StreamWriter_AddClientAsFile(
+    public static extern int StreamWriter_AddClientAsFile(
         [MarshalAs(UnmanagedType.LPStr)] String outputUrl,
         nint* formatContextOut,
         StreamParameters* streamParameters,
         int streamParametersSize);
 
     [DllImport(DllPath)]
-    internal static extern int StreamWriter_WriteFrame(
+    public static extern int StreamWriter_WriteFrame(
         nint packet,
         nint packetTimeBase,
         nint streamTimeBase,
@@ -64,5 +64,5 @@ public static unsafe class FFmpegImportLegacy
         int formatContextsCount);
 
     [DllImport(DllPath)]
-    internal static extern int StreamWriter_CloseFormatContext(nint formatContext);
+    public static extern int StreamWriter_CloseFormatContext(nint formatContext);
 }

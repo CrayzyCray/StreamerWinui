@@ -31,7 +31,6 @@ public unsafe class StreamWriter : IDisposable
         string outputUrl = $"rist://{ipAddress}:{port}";
 
         nint formatContext;
-        LoggingHelper.LogToCon("StreamWriter_AddClient will be invoked");
         fixed (StreamParameters* ptr = _streamParameters)
             FFmpegImport.StreamWriter_AddClient(
                 outputUrl,
@@ -50,7 +49,6 @@ public unsafe class StreamWriter : IDisposable
             return false;
 
         nint formatContext;
-        LoggingHelper.LogToCon("StreamWriter_AddClientAsFile will be invoked");
         fixed (StreamParameters* ptr = _streamParameters)
             FFmpegImport.StreamWriter_AddClientAsFile(
                 path,
@@ -73,7 +71,6 @@ public unsafe class StreamWriter : IDisposable
     {
         foreach (var fc in _streamClientsList)
         {
-            LoggingHelper.LogToCon("StreamWriter_CloseFormatContext will be invoked");
             FFmpegImport.StreamWriter_CloseFormatContext(fc.FormatContext);
         }
 
@@ -91,15 +88,12 @@ public unsafe class StreamWriter : IDisposable
             formatContexts[i] = _streamClientsList[i].FormatContext;
         if (formatContexts.Length > 0)
         {
-            LoggingHelper.LogToCon("StreamWriter_WriteFrame will be invoked");
-            LoggingHelper.LogToCon($"{packet} {packetTimebase} {_streamParameters[streamIndex].Timebase} {formatContexts[0]} {formatContexts.Length}");
-            ret = FFmpegImport.StreamWriter_WriteFrame(
+            ret = FFmpegImportLegacy.StreamWriter_WriteFrame(
                 packet,
                 packetTimebase,
                 _streamParameters[streamIndex].Timebase,
                 formatContexts,
                 formatContexts.Length);
-            LoggingHelper.LogToCon("StreamWriter_WriteFrame has been invoked");
         }
             
 
