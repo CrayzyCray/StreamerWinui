@@ -1,8 +1,6 @@
 ﻿using NAudio.CoreAudioApi;
-using NAudio.Wave;
 using StreamerLib;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 internal class ConsoleApp1
 {
@@ -64,11 +62,17 @@ internal class ConsoleApp1
         sc.AudioCapturing = true;
         var masterChannel = sc.MasterChannel;
         var mmDevice1 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        var mmDevice2 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
         masterChannel.AddChannel(mmDevice1);
-        sc.StartStream();
-        //sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
+        masterChannel.AddChannel(mmDevice2);
+        sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
         //Thread.Sleep(3000);
-        //Console.WriteLine("Press any key to stop");
+
+        Console.WriteLine("Press any key to start, then press any key to stop");
+
+        Console.ReadKey();
+        sc.StartStream();
+
         Console.ReadKey();
         sc.StopStream();
     }

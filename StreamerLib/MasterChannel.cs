@@ -20,7 +20,7 @@ public class MasterChannel : IDisposable
 
     public MasterChannel(StreamWriter streamWriter, Encoders encoder)
     {
-        _mixerThread = new Task(MixingMethodTest);
+        _mixerThread = new Task(MixingMethod);
         _mixerThread.Start();
         StreamWriter = streamWriter;
         Encoder = encoder;
@@ -33,6 +33,10 @@ public class MasterChannel : IDisposable
         if (State == MasterChannelStates.Streaming)
             return null;
         var channel = new WasapiAudioCapturingChannel(device, _audioEncoder.FrameSizeInBytes);
+
+        if (channel.WaveFormat.SampleRate != _audioEncoder.SampleRate)
+            throw new Exception("sample rate must be 48000");
+
         _audioChannels.Add(channel);
         channel.DataAvailable += ReceiveBuffer;
         return channel;
@@ -73,7 +77,7 @@ public class MasterChannel : IDisposable
 
     int c = 0;
 
-    private unsafe void MixingMethodTest()
+    private unsafe void MixingMethod()
     {
         while (true)
         {
@@ -105,75 +109,12 @@ public class MasterChannel : IDisposable
                     fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
                     {
                         float* bufferFloat = (float*)ptr2;
-                        AddBuffer(masterBufferFloat, bufferFloat, _masterBuffer.Length);
+                        AddBuffer(masterBufferFloat, bufferFloat, _masterBuffer.Length / 4);
                     }
                 }
 
                 ClipBuffer(masterBufferFloat, _masterBuffer.Length / 4);
 
-                _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
-            }
-
-            void AddBuffer(float* destonation, float* source, int length)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    destonation[i] += source[i];
-                }
-            }
-
-            void ClipBuffer(float* buffer, int length)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    if (buffer[i] > 1f)
-                        buffer[i] = 1f;
-                    else if (buffer[i] < -1f)
-                        buffer[i] = -1f;
-                }
-            }
-        }
-    }
-
-    private unsafe void MixingMethod()
-    {
-        while (true)
-        {
-            _manualResetEvent.WaitOne();
-            Console.WriteLine("WaitOne");
-
-            while (AllBuffersIsAvailable())
-                Mix();
-
-            _manualResetEvent.Reset();
-            Console.WriteLine("Reset");
-        }
-
-        void Mix()
-        {
-            c++;
-            var readBuffer = _audioChannels[0].ReadNextBuffer();
-            if (readBuffer.Count != _masterBuffer.Length)
-                throw new Exception();
-            Array.Copy(readBuffer.Array, readBuffer.Offset, _masterBuffer, 0, _masterBuffer.Length);
-
-            fixed (byte* ptr1 = _masterBuffer)
-            {
-                float* masterBufferFloat = (float*)ptr1;
-
-                for (int i = 1; i < _audioChannels.Count; i++)
-                {
-                    var buffer = _audioChannels[i].ReadNextBuffer();
-
-                    fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
-                    {
-                        float* bufferFloat = (float*)ptr2;
-                        AddBuffer(masterBufferFloat, bufferFloat, _masterBuffer.Length);
-                    }
-                }
-
-                ClipBuffer(masterBufferFloat, _masterBuffer.Length);
-                
                 _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
             }
 

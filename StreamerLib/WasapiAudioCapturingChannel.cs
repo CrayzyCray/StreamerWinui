@@ -34,7 +34,6 @@ public class WasapiAudioCapturingChannel
 
     private ArraySegment<byte> Dequeue()
     {
-        
         lock (queueLock)
         {
             if (_buffersQueue.Count == 0)
