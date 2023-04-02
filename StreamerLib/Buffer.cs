@@ -7,7 +7,7 @@ internal class Buffer<T>
     public int Size => _buffer.Length;
     public int SizeRemain => Size - Buffered;
     public bool IsEmpty => Buffered == 0;
-    public bool NotEmpty => Buffered != 0;
+    public bool IsNotEmpty => Buffered != 0;
     public bool IsFull => Buffered == Size;
 
     public ref T this[int index] => ref _buffer[index];

@@ -1,59 +1,16 @@
 ﻿using NAudio.CoreAudioApi;
+using NAudio.Wave;
 using StreamerLib;
-using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 internal class ConsoleApp1
 {
     public static void Main()
     {
-        //Test6();
+        //Test();
         RecordingTest();
+        Console.WriteLine("Any key to exit"); 
         Console.ReadKey();
-    }
-
-    static void Test6()
-    {
-        AudioEncoder encoder = new(new StreamerLib.StreamWriter(), Encoders.LibOpus);
-
-        var device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        WasapiAudioCapturingChannel capture = new(device, encoder.FrameSizeInBytes);
-        int counter = 0;
-        ManualResetEvent autoResetEvent = new(false);
-
-        capture.DataAvailable += (s, e) =>
-        {
-            Console.WriteLine($"set {capture.Queue.Count}");
-            autoResetEvent.Set();
-        };
-
-        Stopwatch stopwatch = Stopwatch.StartNew();
-
-        new Task(() =>
-        {
-            while (true)
-            {
-                autoResetEvent.WaitOne();
-
-                counter++;
-                Console.WriteLine(counter);
-                while (capture.BufferIsAvailable)
-                {
-                    //Console.WriteLine("perf1 " + stopwatch.ElapsedMilliseconds);
-                    encoder.EncodeAndWriteFrame(capture.ReadNextBuffer());
-                    //Console.WriteLine("perf2 " + stopwatch.ElapsedMilliseconds);
-                    //Console.WriteLine("packet");
-                }
-                autoResetEvent.Reset();
-            }
-        }).Start();
-
-
-        capture.StartRecording();
-
-        //StartGC(8);
-
-        Console.ReadKey();
-        capture.StopRecording();
     }
 
     static void RecordingTest()
@@ -66,7 +23,6 @@ internal class ConsoleApp1
         masterChannel.AddChannel(mmDevice1);
         masterChannel.AddChannel(mmDevice2);
         sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
-        //Thread.Sleep(3000);
 
         Console.WriteLine("Press any key to start, then press any key to stop");
 
@@ -77,34 +33,46 @@ internal class ConsoleApp1
         sc.StopStream();
     }
 
-    static void Test5()
+    static unsafe void Test()
     {
-        AudioEncoder encoder = new(new StreamerLib.StreamWriter(), Encoders.LibOpus);
-
-        var device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        WasapiAudioCapturingChannel capture = new(device, encoder.FrameSizeInBytes);
-        int counter = 0;
-        capture.DataAvailable += (s, e) =>
+        ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+        Task.Factory.StartNew(() =>
         {
-            counter++;
-            Console.Write($"Counter:{counter}");
-            var sender = s as WasapiAudioCapturingChannel;
-            while (sender.BufferIsAvailable)
+            while (true)
             {
-                //break;
-                encoder.EncodeAndWriteFrame(sender.ReadNextBuffer());
+                Thread.Sleep(2000);
+                manualResetEvent.Set();
+                Console.WriteLine("set");
             }
-            Console.WriteLine($" writed");
-        };
-        capture.StartRecording();
+        });
 
-        Console.ReadKey();
-        capture.StopRecording();
+        Task.Factory.StartNew(() =>
+        {
+            while (true)
+            {
+                manualResetEvent.WaitOne();
+                Thread.Sleep(1000);
+                Console.WriteLine("wait one");
+                manualResetEvent.Reset();
+            }
+        });
+    }
+
+    public class tst
+    {
+        public object data = new();
     }
 
     static void StartGC(int periodInSeconds)
     {
-        new Task(() => { while (true) { GC.Collect(); Thread.Sleep(periodInSeconds * 1000); } })
-            .Start();
+        void While()
+        {
+            while (true)
+            {
+                GC.Collect();
+                Thread.Sleep(periodInSeconds * 1000);
+            }
+        }
+        new Task(While).Start();
     }
 }

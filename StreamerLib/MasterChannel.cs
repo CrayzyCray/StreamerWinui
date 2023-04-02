@@ -1,4 +1,10 @@
+using BenchmarkDotNet.Attributes;
+using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
 using NAudio.CoreAudioApi;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
 
 namespace StreamerLib;
 
@@ -15,18 +21,20 @@ public class MasterChannel : IDisposable
     private AudioEncoder _audioEncoder;
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
-    private Task _mixerThread;
-    private ManualResetEvent _manualResetEvent = new(false);
+    private Thread _mixerThread;
+    private ManualResetEvent _manualResetEvent;
 
     public MasterChannel(StreamWriter streamWriter, Encoders encoder)
     {
-        _mixerThread = new Task(MixingMethod);
+        _manualResetEvent = new(false);
+        _mixerThread = new (MixingMethod);
         _mixerThread.Start();
         StreamWriter = streamWriter;
         Encoder = encoder;
         _audioEncoder = new(streamWriter, encoder);
         _masterBuffer = new byte[_audioEncoder.FrameSizeInBytes];
     }
+
 
     public WasapiAudioCapturingChannel? AddChannel(MMDevice device)
     {
@@ -53,9 +61,12 @@ public class MasterChannel : IDisposable
 
     internal void StartStreaming()
     {
-        foreach (var channel in _audioChannels)
-            if (channel.CaptureState == CaptureState.Stopped)
-                channel.StartRecording();
+        for (int i = _audioChannels.Count - 1; i >= 0; i--)
+            if (_audioChannels[i].CaptureState == CaptureState.Stopped)
+                _audioChannels[i].StartRecording();
+        //foreach (var channel in _audioChannels)
+        //    if (channel.CaptureState == CaptureState.Stopped)
+        //        channel.StartRecording();
         State = MasterChannelStates.Streaming;
     }
     
@@ -67,36 +78,54 @@ public class MasterChannel : IDisposable
     private void ReceiveBuffer(object? sender, EventArgs e)
     {
         if (State != MasterChannelStates.Streaming)
-        {
             return;
-        }
-        
-        Console.WriteLine($"Set. Queue elements count:{_audioChannels[0].Queue.Count}");
+
         _manualResetEvent.Set();
+        //while (_audioChannels[0].BufferIsAvailable)
+        //    writer0.Write(_audioChannels[0].ReadNextBuffer());
+
+        //while (_audioChannels[1].BufferIsAvailable)
+        //    writer1.Write(_audioChannels[1].ReadNextBuffer());
+
     }
 
-    int c = 0;
+    BinaryWriter writer0 = new BinaryWriter(File.Open(@"C:\Users\Cray\Desktop\St\raw0", FileMode.Create));
+    BinaryWriter writer1 = new BinaryWriter(File.Open(@"C:\Users\Cray\Desktop\St\raw1", FileMode.Create));
+    //Stopwatch stopwatch = Stopwatch.StartNew();
 
     private unsafe void MixingMethod()
     {
         while (true)
         {
             _manualResetEvent.WaitOne();
-            Console.Write($"WaitOne ");
+            //Console.WriteLine($"WaitOne");
 
             while (AllBuffersIsAvailable())
+            {
+                //Test();
                 Mix();
+            }
+            
             _manualResetEvent.Reset();
-            Console.WriteLine("Reset");
+        }
+
+        void Test()
+        {
+            //long time = stopwatch.ElapsedMilliseconds;
+            writer0.Write(_audioChannels[0].ReadNextBuffer());
+            writer1.Write(_audioChannels[1].ReadNextBuffer());
+            //time = stopwatch.ElapsedMilliseconds - time;
+            //Console.WriteLine(time);
         }
 
         void Mix()
         {
-            c++;
-            var readBuffer = _audioChannels[0].ReadNextBuffer();
-            if (readBuffer.Count != _masterBuffer.Length)
+            var readedBuffer = _audioChannels[0].ReadNextBuffer();
+            if (readedBuffer.Count != _masterBuffer.Length)
                 throw new Exception();
-            Array.Copy(readBuffer.Array, readBuffer.Offset, _masterBuffer, 0, _masterBuffer.Length);
+            Array.Copy(readedBuffer.Array, readedBuffer.Offset, _masterBuffer, 0, _masterBuffer.Length);
+
+            writer0.Write(readedBuffer);
 
             fixed (byte* ptr1 = _masterBuffer)
             {
@@ -106,6 +135,8 @@ public class MasterChannel : IDisposable
                 {
                     var buffer = _audioChannels[i].ReadNextBuffer();
 
+                    writer1.Write(buffer);
+
                     fixed (byte* ptr2 = &buffer.Array[buffer.Offset])
                     {
                         float* bufferFloat = (float*)ptr2;
@@ -113,7 +144,7 @@ public class MasterChannel : IDisposable
                     }
                 }
 
-                ClipBuffer(masterBufferFloat, _masterBuffer.Length / 4);
+                //ClipBuffer(masterBufferFloat, _masterBuffer.Length / 4);
 
                 _audioEncoder.EncodeAndWriteFrame(_masterBuffer);
             }
@@ -141,18 +172,15 @@ public class MasterChannel : IDisposable
 
     private bool AllBuffersIsAvailable()
     {
-        for (int i = 0; i < _audioChannels.Count; i++)
-        {
-            if (!_audioChannels[i].BufferIsAvailable)
-            {
+        foreach (var channel in _audioChannels)
+            if (channel.BufferIsAvailable == false) 
                 return false;
-            }
-        }
         return true;
     }
 
     public void Dispose()
     {
+        Console.WriteLine("Dispose");
         _audioChannels.ForEach(c => c.StopRecording());
     }
 }
