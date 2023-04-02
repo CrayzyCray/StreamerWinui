@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 
 namespace StreamerLib;
@@ -107,7 +106,7 @@ public unsafe class StreamWriter : IDisposable
 
     public class StreamClient
     {
-        public IPAddress IP;
+        public IPAddress? IP;
         public int Port;
         public nint FormatContext;
         public bool IsFile;

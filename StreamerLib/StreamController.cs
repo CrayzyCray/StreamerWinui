@@ -58,13 +58,13 @@ public class StreamController
     private bool _videoCapturing;
     private bool _audioCapturing;
     private bool _streamIsActive;
-    private int _framerate = 0;
+    private int _framerate;
     private Size _cropResolution;
     private double _resolutionMultiplier = 1;
     //private Ddagrab _ddagrab;
     //private HardwareEncoder _hardwareEncoder;
     private StreamWriter _streamWriter = new();
-    private MasterChannel _masterChannel;
+    private MasterChannel? _masterChannel;
 
     public void StartStream()
     {
@@ -85,7 +85,7 @@ public class StreamController
     
     public void StopStream()
     {
-        _masterChannel.Dispose();
+        _masterChannel?.Dispose();
         _streamWriter.Stop();
         _streamIsActive = false;
     }

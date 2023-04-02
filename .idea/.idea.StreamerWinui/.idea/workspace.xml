@@ -14,11 +14,12 @@
   <component name="ChangeListManager">
     <list default="true" id="9274197f-b926-4229-9fd0-b374b9013392" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ConsoleApp1/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ConsoleApp1/Program.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/AudioBufferSlicer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/AudioBufferSlicer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/FFmpegImport.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/FFmpegImport.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/FFmpegImportLegacy.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/FFmpegImportLegacy.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/Buffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/Buffer.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/Modules.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/Modules.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/StreamController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/StreamWriter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamWriter.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,7 +41,7 @@
     <option name="stateVersion" value="1" />
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="SWEA" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectId" id="2NSssbOzPz7GqBOoD8lCJd79Bck" />
   <component name="ProjectViewState">
@@ -182,7 +183,7 @@
       <workItem from="1679696130753" duration="3695000" />
       <workItem from="1679741258071" duration="762000" />
       <workItem from="1679947977392" duration="1614000" />
-      <workItem from="1680472177307" duration="1010000" />
+      <workItem from="1680472177307" duration="1897000" />
     </task>
     <servers />
   </component>

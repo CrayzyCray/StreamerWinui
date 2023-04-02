@@ -13,7 +13,7 @@ internal class Buffer<T>
     public ref T this[int index] => ref _buffer[index];
         
     private T[] _buffer;
-    private int _nextElementPointer = 0;
+    private int _nextElementPointer;
 
     public void Clear()
     {

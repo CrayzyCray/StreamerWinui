@@ -155,7 +155,7 @@ public unsafe class AudioEncoder : IDisposable
     private IntPtr _avFrame;
     private IntPtr _packet;
     private StreamWriter _streamWriter;
-    private long _pts = 0;
+    private long _pts;
     private IntPtr _timebase;
     private IntPtr _codecParameters;
     private int _sampleRate;
@@ -196,31 +196,6 @@ public unsafe class AudioEncoder : IDisposable
         
         _streamWriter = streamWriter;
         StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
-    }
-
-    public void EncodeAndWriteFrame(ArraySegment<byte> buffer)
-    {
-        if (buffer.Count != FrameSizeInBytes)
-            throw new ArgumentException();
-
-        bool success;
-        fixed (byte* buf = &buffer.Array[buffer.Offset])
-        {
-            success = FFmpegImportLegacy.AudioEncoder_EncodeAndWriteFrame(
-                buf,
-                FrameSizeInBytes,
-                Channels,
-                StreamIndex,
-                _pts,
-                _codecContext,
-                _packet,
-                _avFrame);
-
-            if (success)
-                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
-        }
-
-        _pts += FrameSizeInSamples;
     }
 
     public void EncodeAndWriteFrame(byte[] buffer)

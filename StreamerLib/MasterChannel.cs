@@ -1,19 +1,10 @@
-using BenchmarkDotNet.Attributes;
-using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
 using NAudio.CoreAudioApi;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Threading;
 
 namespace StreamerLib;
 
 public class MasterChannel : IDisposable
 {
     public const int SampleSizeInBytes = 4;
-
-    //public List<WasapiAudioCapturingChannel> AudioChannels => _audioChannels;
-    public int FrameSizeInBytes => _audioEncoder.FrameSizeInBytes;
     public StreamWriter StreamWriter { get; }
     public Encoders Encoder { get; }
     public MasterChannelStates State { get; private set; } = MasterChannelStates.Monitoring;
@@ -80,7 +71,7 @@ public class MasterChannel : IDisposable
         _manualResetEvent.Set();
     }
 
-    private unsafe void MixingMethod()
+    private void MixingMethod()
     {
         while (true)
         {
@@ -92,7 +83,7 @@ public class MasterChannel : IDisposable
             _manualResetEvent.Reset();
         }
 
-        void Mix()
+        unsafe void Mix()
         {
             _masterBuffer = _audioChannels[0].ReadNextBuffer();
 

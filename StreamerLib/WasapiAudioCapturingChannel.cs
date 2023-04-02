@@ -1,7 +1,5 @@
-﻿using BenchmarkDotNet.Columns;
-using NAudio.CoreAudioApi;
+﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
-using System;
 using System.Diagnostics;
 
 namespace StreamerLib;
@@ -91,17 +89,6 @@ public class WasapiAudioCapturingChannel
         DeviceFriendlyName = mmDevice.FriendlyName;
         _audioBufferSlicer = new(frameSizeInBytes);
         _wasapiCapture.DataAvailable += _wasapiCapture_DataAvailable;
-    }
-
-    private unsafe void TestVolume(ArraySegment<byte> segment, float dbfs)
-    {
-        fixed (byte* ptr = &segment.Array[segment.Offset])
-        {
-            float* bufferFloat = (float*)ptr;
-            float volume = (float)Math.Pow(10, dbfs / 20);
-            for (int i = 0; i < segment.Count / 4; i++)
-                bufferFloat[i] = volume;
-        }
     }
 
     private void _wasapiCapture_DataAvailable(object? s, WaveInEventArgs args)
