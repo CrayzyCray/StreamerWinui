@@ -7,7 +7,6 @@ internal class ConsoleApp1
 {
     public static void Main()
     {
-        //Test();
         RecordingTest();
         Console.WriteLine("Any key to exit"); 
         Console.ReadKey();
@@ -31,36 +30,6 @@ internal class ConsoleApp1
 
         Console.ReadKey();
         sc.StopStream();
-    }
-
-    static unsafe void Test()
-    {
-        ManualResetEvent manualResetEvent = new ManualResetEvent(false);
-        Task.Factory.StartNew(() =>
-        {
-            while (true)
-            {
-                Thread.Sleep(2000);
-                manualResetEvent.Set();
-                Console.WriteLine("set");
-            }
-        });
-
-        Task.Factory.StartNew(() =>
-        {
-            while (true)
-            {
-                manualResetEvent.WaitOne();
-                Thread.Sleep(1000);
-                Console.WriteLine("wait one");
-                manualResetEvent.Reset();
-            }
-        });
-    }
-
-    public class tst
-    {
-        public object data = new();
     }
 
     static void StartGC(int periodInSeconds)

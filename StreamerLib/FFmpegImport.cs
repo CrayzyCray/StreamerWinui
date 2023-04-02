@@ -4,7 +4,7 @@ using static StreamerLib.StreamWriter;
 namespace StreamerLib;
 public static unsafe partial class FFmpegImport
 {
-    private const string DllPath = "C:\\Users\\Cray\\source\\repos\\Github\\StreamerWinui\\StreamerLib\\DLLs\\Dll.dll";//"DLLs/Dll.dll";
+    private const string DllPath = "DLLs/Dll.dll";
 
     [LibraryImport(DllPath)]
     public static partial void Here();

@@ -2,6 +2,7 @@
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using System;
+using System.Diagnostics;
 
 namespace StreamerLib;
 
@@ -27,15 +28,14 @@ public class WasapiAudioCapturingChannel
             }
         }
     }
-    //public Queue<ArraySegment<byte>> Queue => _buffersQueue;
 
-    private AudioBufferSlicer2 _audioBufferSlicer;
+    private AudioBufferSlicer _audioBufferSlicer;
     private WasapiCapture _wasapiCapture;
-    private Queue<ArraySegment<byte>> _buffersQueue = new(QueueMaximumCapacity);
+    private Queue<byte[]> _buffersQueue = new(QueueMaximumCapacity);
     private object queueLock = new();
-    private bool _bufferIsAvailable = false;
+    private bool _bufferIsAvailable;
 
-    public ArraySegment<byte> ReadNextBuffer()
+    public byte[] ReadNextBuffer()
     {
         if (_wasapiCapture.CaptureState == CaptureState.Stopped)
             throw new Exception("CaptureState.Stopped");
@@ -43,7 +43,7 @@ public class WasapiAudioCapturingChannel
         return Dequeue();
     }
 
-    private ArraySegment<byte> Dequeue()
+    private byte[] Dequeue()
     {
         lock (queueLock)
         {
@@ -59,36 +59,25 @@ public class WasapiAudioCapturingChannel
         }
     }
 
-    private void Enqueue(List<ArraySegment<byte>> buffers)
+    private void Enqueue(List<byte[]> buffers)
     {
         lock (queueLock)
         {
             if (_buffersQueue.Count + buffers.Count > QueueMaximumCapacity)
             {
                 _buffersQueue.Clear();
-                Console.WriteLine("queue cleared");
+                Debug.WriteLine("queue cleared");
             }
 
             foreach (var buffer in buffers)
             {
-                //TestVolume(buffer, dbfs);
-                //dbfs--;
-                //if (dbfs < -60)
-                //    dbfs = 0;
                 _buffersQueue.Enqueue(buffer);
-                writer.Write(buffer);
             }
-
-            Console.WriteLine($"{this.DeviceFriendlyName} {isbuffered} writed " + buffers.Count);
 
             if (_buffersQueue.Count > 0)
                 _bufferIsAvailable = true;
         }
     }
-
-    float dbfs = 0;
-
-    BinaryWriter writer;
 
     public WasapiAudioCapturingChannel(MMDevice mmDevice, int frameSizeInBytes)
     {
@@ -102,7 +91,6 @@ public class WasapiAudioCapturingChannel
         DeviceFriendlyName = mmDevice.FriendlyName;
         _audioBufferSlicer = new(frameSizeInBytes);
         _wasapiCapture.DataAvailable += _wasapiCapture_DataAvailable;
-        writer = new BinaryWriter(File.Open(@"C:\Users\Cray\Desktop\St\" + DeviceFriendlyName, FileMode.Create));
     }
 
     private unsafe void TestVolume(ArraySegment<byte> segment, float dbfs)
@@ -116,8 +104,6 @@ public class WasapiAudioCapturingChannel
         }
     }
 
-    bool isbuffered = false;
-
     private void _wasapiCapture_DataAvailable(object? s, WaveInEventArgs args)
     {
         if (args.BytesRecorded == 0)
@@ -127,8 +113,6 @@ public class WasapiAudioCapturingChannel
             ApplyVolume(args.Buffer, args.BytesRecorded, Volume);
 
         var buffersList = _audioBufferSlicer.SliceBufferToArraySegments(args.Buffer, args.BytesRecorded);
-        isbuffered = _audioBufferSlicer.LastHasUsingBuffer;
-
         
         Enqueue(buffersList);
         DataAvailable.Invoke(this, args);
