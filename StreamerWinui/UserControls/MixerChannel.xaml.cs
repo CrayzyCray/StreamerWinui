@@ -33,13 +33,11 @@ public sealed partial class MixerChannel : UserControl
     public MixerChannel(WasapiAudioCapturingChannel wasapiAudioCapturingChannel)
     {
         this.InitializeComponent();
-
-        wasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
-        //if (wasapiAudioCapturingChannel.CaptureState == CaptureState.Stopped)
-        //    wasapiAudioCapturingChannel.StartRecording();
-
-        DeviceNameTextBlock.Text = wasapiAudioCapturingChannel.MMDevice.FriendlyName;
+        
         WasapiAudioCapturingChannel = wasapiAudioCapturingChannel;
+        WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
+        
+        DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
     }
 
     public void SetVolumeMeterLevel(double dbfs)
@@ -50,8 +48,6 @@ public sealed partial class MixerChannel : UserControl
 
     private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs args)
     {
-        //if (_capture.CaptureState == CaptureState.Stopped)
-        //    return;
             var buffer = new WaveBuffer(args.Buffer);
             float peak = 0;
 

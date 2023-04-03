@@ -20,7 +20,7 @@ internal class ConsoleApp1
         var mmDevice1 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
         var mmDevice2 = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
         masterChannel.AddChannel(mmDevice1);
-        masterChannel.AddChannel(mmDevice2);
+        //masterChannel.AddChannel(mmDevice2);
         sc.AddClientAsFile(@"C:\Users\Cray\Desktop\St\1.opus");
 
         Console.WriteLine("Press any key to start, then press any key to stop");

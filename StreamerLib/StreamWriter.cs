@@ -60,7 +60,7 @@ public unsafe class StreamWriter : IDisposable
         return true;
     }
 
-    public void Stop()
+    public void Clear()
     {
         DeleteAllClients();
         DeleteStreamParameters();

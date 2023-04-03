@@ -8,18 +8,18 @@ public class MasterChannel : IDisposable
     public StreamWriter StreamWriter { get; }
     public Encoders Encoder { get; }
     public MasterChannelStates State { get; private set; } = MasterChannelStates.Monitoring;
+    public int DevicesCount => _audioChannels.Count;
 
     private AudioEncoder _audioEncoder;
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
     private Thread _mixerThread;
     private ManualResetEvent _manualResetEvent;
+    private CancellationTokenSource _cancellationTokenSource = new();
 
     public MasterChannel(StreamWriter streamWriter, Encoders encoder)
     {
         _manualResetEvent = new(false);
-        _mixerThread = new (MixingMethod);
-        _mixerThread.Start();
         StreamWriter = streamWriter;
         Encoder = encoder;
         _audioEncoder = new(streamWriter, encoder);
@@ -31,13 +31,19 @@ public class MasterChannel : IDisposable
     {
         if (State == MasterChannelStates.Streaming)
             return null;
+        
         var channel = new WasapiAudioCapturingChannel(device, _audioEncoder.FrameSizeInBytes);
 
         if (channel.WaveFormat.SampleRate != _audioEncoder.SampleRate)
             throw new Exception("sample rate must be 48000");
 
-        _audioChannels.Add(channel);
         channel.DataAvailable += ReceiveBuffer;
+        
+        if (State == MasterChannelStates.Monitoring)
+            channel.StartRecording();
+        
+        _audioChannels.Add(channel);
+        
         return channel;
     }
 
@@ -52,15 +58,50 @@ public class MasterChannel : IDisposable
 
     internal void StartStreaming()
     {
+        if (_audioChannels.Count == 0)
+            throw new Exception("no audio devices");
+        
+        if (State == MasterChannelStates.Stopped)
+        {
+            foreach (var channel in _audioChannels)
+                if (channel.CaptureState == CaptureState.Stopped)
+                    channel.StartRecording();
+        }
+
+        _mixerThread = new Thread(MixingMethod);
+        _mixerThread.Start();
+        
+        State = MasterChannelStates.Streaming;
+    }
+
+    public void StartMonitoring()
+    {
+        if (State != MasterChannelStates.Stopped)
+            return;
+        
         foreach (var channel in _audioChannels)
             if (channel.CaptureState == CaptureState.Stopped)
                 channel.StartRecording();
-        State = MasterChannelStates.Streaming;
+        State = MasterChannelStates.Monitoring;
     }
     
     internal void StopStreaming()
     {
         State = MasterChannelStates.Monitoring;
+        _cancellationTokenSource.Cancel();
+        _manualResetEvent.Set();
+        _mixerThread.Join();
+    }
+
+    public void Stop()
+    {
+        if (State == MasterChannelStates.Streaming)
+            StopStreaming();
+        
+        foreach (var channel in _audioChannels)
+            if (channel.CaptureState != CaptureState.Stopped)
+                channel.StopRecording();
+        
     }
 
     private void ReceiveBuffer(object? sender, EventArgs e)
@@ -73,6 +114,8 @@ public class MasterChannel : IDisposable
 
     private void MixingMethod()
     {
+        var cancellationToken = _cancellationTokenSource.Token;
+
         while (true)
         {
             _manualResetEvent.WaitOne();
@@ -81,6 +124,8 @@ public class MasterChannel : IDisposable
                 Mix();
             
             _manualResetEvent.Reset();
+            if (cancellationToken.IsCancellationRequested)
+                return;
         }
 
         unsafe void Mix()
@@ -138,12 +183,13 @@ public class MasterChannel : IDisposable
 
     public void Dispose()
     {
-        _audioChannels.ForEach(c => c.StopRecording());
+        Stop();
     }
 }
 
 public enum MasterChannelStates
 {
+    Stopped,
     Monitoring,
     Streaming
 }

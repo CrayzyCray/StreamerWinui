@@ -23,8 +23,13 @@
 
         <Grid Grid.Row="1" Padding="8">
             <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal">
+                    <Button Click="PickFolderButton_Click">Pick folder</Button>
+                    <TextBox Name="pathTextBox" Margin="6 0 0 0"  PlaceholderText="File name" Text="{x:Bind _fileName}" TextAlignment="Right"></TextBox>
+                    <TextBlock  VerticalAlignment="Center" Margin="5 0 0 0" >.opus</TextBlock>
+                </StackPanel>
 
-                <TextBox Name="pathTextBox"></TextBox>
+
                 <Button Name="StartButton" Click="StartButton_Click">
                     <TextBlock Name="StartButtonText" Text="Start"/>
                 </Button>

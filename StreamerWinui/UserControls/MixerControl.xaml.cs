@@ -2,21 +2,21 @@ using Microsoft.UI.Xaml.Controls;
 using NAudio.CoreAudioApi;
 using System;
 using System.Collections.Generic;
+using StreamerLib;
 
 namespace StreamerWinui.UserControls
 {
     public sealed partial class MixerControl : UserControl
     {
-        public StreamerLib.StreamController StreamController { get; }
 
         private List<MixerChannel> _devices = new();
         private StreamerLib.MasterChannel _masterChannel;
 
-        public MixerControl(StreamerLib.StreamController streamController)
+        public MixerControl(MasterChannel masterChannel)
         {
             this.InitializeComponent();
-            StreamController = streamController;
-            _masterChannel = streamController.MasterChannel;
+            _masterChannel = masterChannel;
+            _masterChannel.StartMonitoring();
         }
 
         public void AddChannel(MMDevice device)
@@ -42,16 +42,16 @@ namespace StreamerWinui.UserControls
 
             for (int i = 0; i < allDevices.Count; i++)
             {
-                bool b = true;
+                bool isAvailable = true;
                 for (int j = 0; j < _devices.Count; j++)
                 {
                     if (allDevices[i].ID == _devices[j].Device.ID)
                     {
-                        b = false;
+                        isAvailable = false;
                         break;
                     }
                 }
-                if (b)
+                if (isAvailable)
                     availableDevices.Add(allDevices[i]);
             }
 
@@ -60,15 +60,8 @@ namespace StreamerWinui.UserControls
 
         public void Dispose()
         {
-            //if (StackPanel != null)
-            //    StackPanel.Children.Clear();
-            _devices.ForEach(d=>d.Dispose());
             _devices.Clear();
-        }
-
-        public void StartStreaming()
-        {
-            throw new NotImplementedException();
+            _masterChannel.Dispose();
         }
     }
 }

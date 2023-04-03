@@ -68,9 +68,9 @@ public class StreamController
 
     public void StartStream()
     {
+        _audioCapturing = true;
         ValidateParameters();
-        
-        _streamIsActive = true;
+
         
         //if _masterChannel not set, then setup default audio output device
         if (_masterChannel == null)
@@ -79,14 +79,19 @@ public class StreamController
             var device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             _masterChannel.AddChannel(device);
         }
+
+        if (_masterChannel.DevicesCount == 0)
+            return;
         
         _masterChannel.StartStreaming();
+        
+        _streamIsActive = true;
     }
     
     public void StopStream()
     {
-        _masterChannel?.Dispose();
-        _streamWriter.Stop();
+        _masterChannel?.StopStreaming();
+        _streamWriter.Clear();
         _streamIsActive = false;
     }
 

@@ -89,6 +89,7 @@ public class WasapiAudioCapturingChannel
         DeviceFriendlyName = mmDevice.FriendlyName;
         _audioBufferSlicer = new(frameSizeInBytes);
         _wasapiCapture.DataAvailable += _wasapiCapture_DataAvailable;
+        _wasapiCapture.RecordingStopped += (sender, args) => ClearAllData();
     }
 
     private void _wasapiCapture_DataAvailable(object? s, WaveInEventArgs args)
@@ -120,6 +121,11 @@ public class WasapiAudioCapturingChannel
     public void StopRecording()
     {
         _wasapiCapture.StopRecording();
+    }
+
+    void ClearAllData()
+    {
+        _buffersQueue.Clear();
         _audioBufferSlicer.Clear();
     }
 }

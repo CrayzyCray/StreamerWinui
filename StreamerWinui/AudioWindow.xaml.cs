@@ -6,7 +6,11 @@ using StreamerLib;
 using StreamerWinui.UserControls;
 using System;
 using Windows.Graphics;
+using Windows.Storage.AccessCache;
+using Windows.Storage.Pickers;
+using Windows.Storage;
 using WinRT;
+using System.IO;
 
 namespace StreamerWinui
 {
@@ -18,7 +22,9 @@ namespace StreamerWinui
 
         public static readonly SizeInt32 DefaultWindowSize = new(380, 500);
 
-        const string DefaultPath = @"C:\Users\Cray\Desktop\St\2.opus";
+        private string _folderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        private string _fileName = "Recording1";
+        const string _defaultFileExtension = ".opus";
 
         public AudioWindow()
         {
@@ -43,21 +49,29 @@ namespace StreamerWinui
         {
             if (!_streamController.StreamIsActive)
             {
-                _streamController.AudioCapturing = true;
-                _streamController.AddClientAsFile(DefaultPath);
+                var path = Path.Combine(_folderPath, _fileName + _defaultFileExtension);
+
+                if (!Directory.Exists(_folderPath))
+                    throw new Exception("Folder path not exist");
+
                 _streamController.StartStream();
-                StartButtonText.Text = "Stop";
+
+                if (_streamController.StreamIsActive == false)
+                    return;
+
+                _streamController.AddClientAsFile(path);
             }
             else
             {
                 _streamController.StopStream();
-                StartButtonText.Text = "Start";
             }
+
+            StartButtonText.Text = _streamController.StreamIsActive ? "Stop" : "Start";
         }
 
         private void CreateMixerChannelControl()
         {
-            _mixerChannelControl = new(_streamController);
+            _mixerChannelControl = new(_streamController.MasterChannel);
             MixerChannelControlContainer.Children.Add(_mixerChannelControl);
         }
         
@@ -85,6 +99,28 @@ namespace StreamerWinui
             m_micaController.SetSystemBackdropConfiguration(m_configurationSource);
 
             return true;
+        }
+
+        private async void PickFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Create a folder picker
+            FolderPicker openPicker = new Windows.Storage.Pickers.FolderPicker();
+
+            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+            nint hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+            // Initialize the folder picker with the window handle (HWND).
+            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+            // Set options for your folder picker
+            openPicker.SuggestedStartLocation = PickerLocationId.Desktop;
+            openPicker.FileTypeFilter.Add("*");
+
+            // Open the picker for the user to pick a folder
+            StorageFolder folder = await openPicker.PickSingleFolderAsync();
+
+            if (folder != null)
+                _folderPath = folder.Path;
         }
 
         private void WindowActivated(object sender, WindowActivatedEventArgs args) =>

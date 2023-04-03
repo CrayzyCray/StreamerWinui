@@ -13,14 +13,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9274197f-b926-4229-9fd0-b374b9013392" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/AudioBufferSlicer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/AudioBufferSlicer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/Buffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/Buffer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ConsoleApp1/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ConsoleApp1/Program.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/Modules.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/Modules.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/StreamController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/StreamWriter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamWriter.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerWinui/AudioWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/AudioWindow.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,6 +31,7 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/346e1baf23cb485c9698d757bd5611bd2e000/e8/057db464/WaveBuffer.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/f9472ad234c64980a7caa00752d5c75c63c3b8/1d/4870c2d2/UserControl.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/36e740b59df23626d207e72ea77e34298e53dd99db463eee529f8c416b5664/ThrowHelper.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/5eb5afd342c82db026c6155a911419b36dcd8b8b5c284371b2cd9b3d78c824c1/WaitHandle.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/70f617fc68cf47c4af27e06f2b56f801b1c8a8/_50a68/EventResetMode.cs" root0="SKIP_HIGHLIGHTING" />
@@ -65,7 +68,7 @@
     ]
   }
 }</component>
-  <component name="RunManager" selected=".NET Project.ConsoleApp1">
+  <component name="RunManager" selected="UWP.StreamerWinui">
     <configuration name="StreamerWinui: win10-x64" type="DotNetMsBuildPublish" factoryName="Publish to IIS">
       <riderPublish publish_profile="win10-x64.pubxml" pubxml_path="$PROJECT_DIR$/StreamerWinui/Properties/PublishProfiles/win10-x64.pubxml" uuid_high="-2582124705845719937" uuid_low="-5866505617693931236" />
       <method v="2" />
@@ -183,7 +186,8 @@
       <workItem from="1679696130753" duration="3695000" />
       <workItem from="1679741258071" duration="762000" />
       <workItem from="1679947977392" duration="1614000" />
-      <workItem from="1680472177307" duration="1897000" />
+      <workItem from="1680472177307" duration="3757000" />
+      <workItem from="1680548039003" duration="2626000" />
     </task>
     <servers />
   </component>
