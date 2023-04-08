@@ -47,7 +47,11 @@ namespace StreamerWinui
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_streamController.StreamIsActive)
+            if (_streamController.StreamIsActive)
+            {
+                _streamController.StopStream();
+            }
+            else
             {
                 var path = Path.Combine(_folderPath, _fileName + _defaultFileExtension);
 
@@ -60,10 +64,6 @@ namespace StreamerWinui
                     return;
 
                 _streamController.AddClientAsFile(path);
-            }
-            else
-            {
-                _streamController.StopStream();
             }
 
             StartButtonText.Text = _streamController.StreamIsActive ? "Stop" : "Start";
@@ -177,6 +177,11 @@ namespace StreamerWinui
                 _mixerChannelControl.AddChannel(device);
                 devicesComboBox.SelectedIndex = -1;
             }
+        }
+
+        private void FileNameTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            _fileName = (sender as TextBox)?.Text;
         }
     }
 }

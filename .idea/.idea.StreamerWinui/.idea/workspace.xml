@@ -11,40 +11,36 @@
     <projectFile pubXmlPath="Win2DTest/Properties/PublishProfiles/win10-arm64.pubxml">Win2DTest/Win2DTest.csproj</projectFile>
     <projectFile pubXmlPath="Win2DTest/Properties/PublishProfiles/win10-x64.pubxml">Win2DTest/Win2DTest.csproj</projectFile>
   </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="9274197f-b926-4229-9fd0-b374b9013392" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.StreamerWinui/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ConsoleApp1/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/ConsoleApp1/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.dll" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.lib" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/DLLs/Dll.lib" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/MasterChannel.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/StreamController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/StreamWriter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/StreamWriter.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/WasapiAudioCapturingChannel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerLib/Modules.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerLib/Modules.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/StreamerWinui/AudioWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/AudioWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StreamerWinui/AudioWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/AudioWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerChannel.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/StreamerWinui/UserControls/MixerControl.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/346e1baf23cb485c9698d757bd5611bd2e000/e8/057db464/WaveBuffer.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/f9472ad234c64980a7caa00752d5c75c63c3b8/1d/4870c2d2/UserControl.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/36e740b59df23626d207e72ea77e34298e53dd99db463eee529f8c416b5664/ThrowHelper.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/5eb5afd342c82db026c6155a911419b36dcd8b8b5c284371b2cd9b3d78c824c1/WaitHandle.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/70f617fc68cf47c4af27e06f2b56f801b1c8a8/_50a68/EventResetMode.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/7cb6b7c72d108583c026611357d59eb9c29fc5a452d33c863a5a1678613153/Array.CoreCLR.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/8b83ad5d7650ff88fe54f1e3729f32d3f99ab5b51e55c1fd356ce31fd721631/ArraySegment.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/c3b2a4cdcf127e28515dc4657830cb28309c97b930e7b89a3f664eda6c5172/Thread.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/StreamerLib/FFmpegImport.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/StreamerWinui/obj/x64/Debug/net7.0-windows10.0.19041.0/win10-x64/App.g.i.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="CurrentFile" />
+    <option name="selectedTabId" value="SWEA" />
   </component>
   <component name="ProjectId" id="2NSssbOzPz7GqBOoD8lCJd79Bck" />
   <component name="ProjectViewState">
@@ -57,13 +53,19 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;XThreadsFramesViewSplitterKey&quot;: &quot;0.34762633&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;P/Invoke&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;reference.idesettings.emmet&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
   &quot;keyToStringList&quot;: {
     &quot;rider.external.source.directories&quot;: [
-      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\DecompilerCache&quot;,
-      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2022.3\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2023.1\\resharper-host\\DecompilerCache&quot;,
+      &quot;C:\\Users\\Cray\\AppData\\Roaming\\JetBrains\\Rider2023.1\\resharper-host\\SourcesCache&quot;,
       &quot;C:\\Users\\Cray\\AppData\\Local\\Symbols\\src&quot;
     ]
   }
@@ -188,6 +190,11 @@
       <workItem from="1679947977392" duration="1614000" />
       <workItem from="1680472177307" duration="3757000" />
       <workItem from="1680548039003" duration="2626000" />
+      <workItem from="1680809934558" duration="91000" />
+      <workItem from="1680813362175" duration="269000" />
+      <workItem from="1680813641982" duration="771000" />
+      <workItem from="1680878110859" duration="2957000" />
+      <workItem from="1680970493539" duration="3663000" />
     </task>
     <servers />
   </component>
@@ -197,5 +204,12 @@
   <component name="UnityUnitTestConfiguration" currentTestLauncher="NUnit" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <pin-to-top-manager>
+      <pinned-members>
+        <PinnedItemInfo parentTag="Type#StreamerLib.StreamWriter" memberName="_streamParameters" />
+      </pinned-members>
+    </pin-to-top-manager>
   </component>
 </project>

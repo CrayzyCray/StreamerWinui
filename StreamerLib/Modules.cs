@@ -147,14 +147,14 @@ public unsafe class AudioEncoder : IDisposable
     public int FrameSizeInSamples { get; }
     public int FrameSizeInBytes { get; }
     public int Channels { get; }
-    public int StreamIndex { get; }
+    public int StreamIndex { get; private set; } = -1;
     public int SampleRate => _sampleRate;
     public int SampleFormat => AV_SAMPLE_FMT_FLT;
 
     private IntPtr _codecContext;
     private IntPtr _avFrame;
     private IntPtr _packet;
-    private StreamWriter _streamWriter;
+    private StreamWriter? _streamWriter;
     private long _pts;
     private IntPtr _timebase;
     private IntPtr _codecParameters;
@@ -193,13 +193,12 @@ public unsafe class AudioEncoder : IDisposable
         
         FrameSizeInSamples = frameSizeInSamples;
         FrameSizeInBytes = frameSizeInSamples * channels * SampleSizeInBytes;
-        
-        _streamWriter = streamWriter;
-        StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
     }
 
     public void EncodeAndWriteFrame(byte[] buffer)
     {
+        if (StreamIndex == -1)
+            return;
         if (buffer.Length != FrameSizeInBytes)
             throw new ArgumentException();
 
@@ -230,6 +229,17 @@ public unsafe class AudioEncoder : IDisposable
             _codecContext, 
             _codecParameters, 
             _timebase);
+    }
+
+    public void Clean()
+    {
+        _pts = 0;
+    }
+
+    public void RegisterAVStream(StreamWriter streamWriter)
+    {
+        _streamWriter = streamWriter;
+        StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
     }
 }
 

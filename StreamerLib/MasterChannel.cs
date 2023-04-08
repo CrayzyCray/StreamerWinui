@@ -14,15 +14,14 @@ public class MasterChannel : IDisposable
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
     private Thread _mixerThread;
-    private ManualResetEvent _manualResetEvent;
+    private ManualResetEvent _manualResetEvent = new(false);
     private CancellationTokenSource _cancellationTokenSource = new();
 
     public MasterChannel(StreamWriter streamWriter, Encoders encoder)
     {
-        _manualResetEvent = new(false);
         StreamWriter = streamWriter;
         Encoder = encoder;
-        _audioEncoder = new(streamWriter, encoder);
+        _audioEncoder = new(StreamWriter, Encoder);
         _masterBuffer = new byte[_audioEncoder.FrameSizeInBytes];
     }
 
@@ -58,6 +57,8 @@ public class MasterChannel : IDisposable
 
     internal void StartStreaming()
     {
+        if (State == MasterChannelStates.Streaming)
+            return;
         if (_audioChannels.Count == 0)
             throw new Exception("no audio devices");
         
@@ -68,6 +69,9 @@ public class MasterChannel : IDisposable
                     channel.StartRecording();
         }
 
+        _audioEncoder.RegisterAVStream(StreamWriter);
+
+        _cancellationTokenSource = new();
         _mixerThread = new Thread(MixingMethod);
         _mixerThread.Start();
         
@@ -91,6 +95,7 @@ public class MasterChannel : IDisposable
         _cancellationTokenSource.Cancel();
         _manualResetEvent.Set();
         _mixerThread.Join();
+        _audioEncoder.Clean();
     }
 
     public void Stop()
