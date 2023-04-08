@@ -5,6 +5,8 @@
 Dlls/
 .idea/
 .vscode/
+Win2DTest/
+ConsoleApp1/
 
 # User-specific files
 *.rsuser
