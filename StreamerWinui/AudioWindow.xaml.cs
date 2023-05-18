@@ -37,7 +37,6 @@ namespace StreamerWinui
 
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);
-            DotNetTextBlock.Text = ".NET " + Environment.Version;
 
             FillDevicesComboBox();
             Closed += WindowClosed;

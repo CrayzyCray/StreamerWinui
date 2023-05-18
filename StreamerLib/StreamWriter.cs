@@ -4,8 +4,6 @@ namespace StreamerLib;
 public unsafe class StreamWriter : IDisposable
 {
     public const int DefaultPort = 10000;
-    public StreamParameters GetStreamParameters(int streamIndex) => _streamParameters[streamIndex];
-    public StreamClient GetStreamClient(int id) => _streamClientsList[id];
 
     private StreamParameters[] _streamParameters = new StreamParameters[0];
     private List<StreamClient> _streamClientsList = new();
@@ -69,9 +67,7 @@ public unsafe class StreamWriter : IDisposable
     private void DeleteAllClients()
     {
         foreach (var fc in _streamClientsList)
-        {
             FFmpegImport.StreamWriter_CloseFormatContext(fc.FormatContext);
-        }
 
         _streamClientsList.Clear();
     }
@@ -94,7 +90,6 @@ public unsafe class StreamWriter : IDisposable
                 formatContexts,
                 formatContexts.Length);
         }
-            
 
         return ret;
     }
