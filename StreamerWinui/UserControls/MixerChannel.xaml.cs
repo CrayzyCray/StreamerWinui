@@ -54,17 +54,7 @@ public sealed partial class MixerChannel : UserControl
 
     private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs args)
     {
-        var buffer = new WaveBuffer(args.Buffer);
-        float peak = 0;
-
-        for (int index = 0; index < args.BytesRecorded / 4; index++)
-        {
-            var sample = buffer.FloatBuffer[index];
-            if (sample < 0) sample = -sample;
-            if (sample > peak) peak = sample;
-        }
-
-        double dbfs = 20 * Math.Log10(peak);
+        float dbfs = LibUtil.get_peak_safe(args.Buffer, args.BytesRecorded);
         SetVolumeMeterLevel(dbfs);
     }
 

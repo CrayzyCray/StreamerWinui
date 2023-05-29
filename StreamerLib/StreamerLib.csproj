@@ -39,6 +39,9 @@
   </ItemGroup>
 
   <ItemGroup>
+	<None Update="libutil.dll">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
     <None Update="DLLs\avcodec-60.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -21,9 +21,6 @@
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-  <ItemGroup>
-    <None Remove="UserControls\MixerControl.xaml" />
-  </ItemGroup>
   
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
