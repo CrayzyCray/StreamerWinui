@@ -13,7 +13,7 @@
 
     <Grid Height="70" Width="352" CornerRadius="6" Background="#6000">
 
-        <canvas:CanvasControl x:Name="VolumeCanvas" Draw="Canvas_Draw"></canvas:CanvasControl>
+        <canvas:CanvasControl x:Name="PeakVolumeCanvas" Draw="Canvas_Draw"></canvas:CanvasControl>
 
         <Grid Padding="6">
             <TextBlock

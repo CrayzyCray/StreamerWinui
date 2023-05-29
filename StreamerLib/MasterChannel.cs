@@ -160,9 +160,7 @@ public class MasterChannel : IDisposable
             void SumBuffers(float* destonation, float* source, int length)
             {
                 for (int i = 0; i < length; i++)
-                {
                     destonation[i] += source[i];
-                }
             }
 
             void ApplyClipping(float* buffer, int length)

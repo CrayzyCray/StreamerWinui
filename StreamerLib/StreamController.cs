@@ -1,6 +1,7 @@
 ﻿using NAudio.CoreAudioApi;
 using System.Drawing;
 using System.Net;
+using System.Text;
 
 namespace StreamerLib;
 public class StreamController
@@ -68,22 +69,13 @@ public class StreamController
 
     public void StartStream()
     {
-        _audioCapturing = true;
         ValidateParameters();
 
-        
-        //if _masterChannel not set, then setup default audio output device
-        if (_masterChannel == null)
+        if (_audioCapturing)
         {
-            _masterChannel = new MasterChannel(_streamWriter, DefaultAudioEncoder);
-            var device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-            _masterChannel.AddChannel(device);
+            SettingUpAudio();
+            _masterChannel.StartStreaming();
         }
-
-        if (_masterChannel.DevicesCount == 0)
-            return;
-        
-        _masterChannel.StartStreaming();
         
         _streamIsActive = true;
     }
@@ -95,6 +87,19 @@ public class StreamController
         _streamIsActive = false;
     }
 
+    private void SettingUpAudio()
+    {
+        if (_masterChannel == null)
+        {
+            _masterChannel = new MasterChannel(_streamWriter, DefaultAudioEncoder);
+            var device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            _masterChannel.AddChannel(device);
+        }
+
+        if (_masterChannel.DevicesCount == 0)
+            throw new Exception("No one capturing devices");
+    }
+
     public bool AddClient(IPAddress ipAddress, int port = StreamWriter.DefaultPort) => _streamWriter.AddClient(ipAddress, port);
     public bool AddClientAsFile(string Path) => _streamWriter.AddClientAsFile(Path);
 
@@ -103,25 +108,32 @@ public class StreamController
         List<string> parameters = new List<string>();
         
         if (_framerate != 0)
-            parameters.Add("framerate=" + _framerate);
+            parameters.Add($"framerate={_framerate}");
         if (_cropResolution != Size.Empty)
-            parameters.Add("video_size=" + _cropResolution.Width + "x" + _cropResolution.Height);
+            parameters.Add($"video_size={_cropResolution.Width}x{_cropResolution.Height}");
 
         if (parameters.Count == 0)
             return string.Empty;
 
-        string str = parameters.First();
+        var stringBuilder = new StringBuilder();
+        stringBuilder.Append(parameters.First());
 
         if (parameters.Count == 1)
-            return str;
+            return stringBuilder.ToString();
 
-        str += ":" + parameters[1];
+        stringBuilder.Append(':');
+        stringBuilder.Append(parameters[1]);
 
         if (parameters.Count > 2)
+        {
             for (int i = 2; i < parameters.Count; i++)
-                str += "," + parameters[i];
+            {
+                stringBuilder.Append(',');
+                stringBuilder.Append(parameters[i]);
+            }
+        }
 
-        return str;
+        return stringBuilder.ToString();
     }
 
     private void ValidateParameters()

@@ -15,9 +15,8 @@
             <RowDefinition Height="86"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        
+
         <Grid>
-            <TextBlock Name="DotNetTextBlock"></TextBlock>
             <Border Name="AppTitleBar" Canvas.ZIndex="1"/>
         </Grid>
 
