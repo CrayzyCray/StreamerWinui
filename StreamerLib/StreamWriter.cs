@@ -83,7 +83,7 @@ public unsafe class StreamWriter : IDisposable
             formatContexts[i] = _streamClientsList[i].FormatContext;
         if (formatContexts.Length > 0)
         {
-            ret = FFmpegImportLegacy.StreamWriter_WriteFrame(
+            ret = FFmpegImport.StreamWriter_WriteFrame(
                 packet,
                 packetTimebase,
                 _streamParameters[streamIndex].Timebase,

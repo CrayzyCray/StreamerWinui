@@ -1,61 +1,55 @@
+using Microsoft.Graphics.Canvas;
 using Microsoft.UI.Xaml.Controls;
 using NAudio.CoreAudioApi;
-using NAudio.Wave;
 using StreamerLib;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Numerics;
 
 namespace StreamerWinui.UserControls;
 public sealed partial class MixerChannel : UserControl
 {
-    public const double MinimumVolumeMeterLevelDbfs = -62;
+    public const float MinimumVolumeMeterLevel = -62;
 
     public WasapiAudioCapturingChannel WasapiAudioCapturingChannel { get; }
     public MMDevice Device => WasapiAudioCapturingChannel.MMDevice;
+    public int Channels => WasapiAudioCapturingChannel.Channels;
     public event EventHandler OnDeleting;
+    private MixerControl _mixerControl;
     const int _width = 352;
     const int _height = 70;
 
-    private Queue<double> queueOfDbfs = new(64);
-    private int _updateRate;
-
-    //public MixerChannel(MMDevice mmDevice, int frameSizeInBytes)
-    //{
-    //    if (mmDevice.DataFlow == DataFlow.All)
-    //        throw new Exception("Wrong mmDevice.DataFlow");
-
-    //    WasapiAudioCapturingChannel = new(mmDevice, frameSizeInBytes);
-    //    WasapiAudioCapturingChannel.StartRecording();
-    //    WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
-
-    //    this.InitializeComponent();
-
-    //    DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
-    //}
-
-    public MixerChannel(WasapiAudioCapturingChannel wasapiAudioCapturingChannel, int updateRate = 30)
+    public MixerChannel(WasapiAudioCapturingChannel wasapiAudioCapturingChannel, MixerControl mixerControl)
     {
-        _updateRate = updateRate;
+        _mixerControl = mixerControl;
 
-        this.InitializeComponent();
-        
         WasapiAudioCapturingChannel = wasapiAudioCapturingChannel;
         WasapiAudioCapturingChannel.DataAvailable += _captureDataRecieved;
         
-        DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
-    }
+        _dbfsToDraw = new float[Channels];
+        _dbfsLast = new float[Channels];
 
-    public void SetVolumeMeterLevel(double dbfs)
-    {
-        this.dbfs = dbfs;
-        PeakVolumeCanvas.Invalidate();
+        for (int i = 0; i < Channels; i++)
+        {
+            _dbfsLast[i] = float.NegativeInfinity;
+            _dbfsToDraw[i] = float.NegativeInfinity;
+        }
+
+        this.InitializeComponent();
+        DeviceNameTextBlock.Text = WasapiAudioCapturingChannel.MMDevice.FriendlyName;
     }
 
     private void _captureDataRecieved(object sender, NAudio.Wave.WaveInEventArgs args)
     {
-        float dbfs = LibUtil.get_peak_safe(args.Buffer, args.BytesRecorded);
-        SetVolumeMeterLevel(dbfs);
+        float[] dbfs1 = new float[Channels];
+        for (int i = 0; i < Channels; i++)
+        {
+            dbfs1[i] = LibUtil.GetPeakMultichannel(args.Buffer, args.BytesRecorded, Channels, i);
+            
+        }
+        _dbfsToDraw = dbfs1;//bug here 1
+        PeakVolumeCanvas.Invalidate();
     }
 
     private void DeleteButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -64,21 +58,48 @@ public sealed partial class MixerChannel : UserControl
         OnDeleting.Invoke(this, null);
     }
 
-    Windows.Foundation.Rect rect;
     Windows.UI.Color VolumeMeterColor = Windows.UI.Color.FromArgb(128, 0, 255, 0);
-    double _dbfsToDraw = 0;
-    private double _meterDecay = 24;
+    const int Thickness = 1;
 
+    float[] _dbfsToDraw;
+    float[] _dbfsLast = { float.NegativeInfinity };
+    float _meterDecay = 24;
+    TimeSpan _time = TimeSpan.Zero;
+    List<float> list = new(64);
     private void Canvas_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)
     {
-        double dbfsPredicted = _dbfsToDrawOld - _meterDecay / _updateRate;
-        var width = (-MinimumVolumeMeterLevelDbfs + dbfs) * _width / -MinimumVolumeMeterLevelDbfs;
-        if (width < 0)
-            width = 0;
-        else if (width > _width)
-            width = _width;
-        rect.Width = width;
-        args.DrawingSession.DrawLine((float)(width - 1), 0, (float)(width - 1), _height, VolumeMeterColor, 1);
+        TimeSpan time = _mixerControl.Time;
+        float decay = _meterDecay / ((float)(time - _time).TotalSeconds);
+        
+        _time = time;
+        float dbfsPredicted;
+        for (int i = 0; i < _dbfsToDraw.Length; i++)
+        {
+            dbfsPredicted = _dbfsLast[i] - decay;
+            //Debug.Assert(list.Count < 16); list.Add(dbfsPredicted);
+            if (dbfsPredicted > _dbfsToDraw[i])
+                _dbfsToDraw[i] = dbfsPredicted;
+        }
+        _dbfsLast = _dbfsToDraw;
+        DrawPeaksMultichannel(args.DrawingSession, _width, _height, _dbfsToDraw);
+        
+    }
+
+    void DrawPeaksMultichannel(CanvasDrawingSession drawingSession, float width, float height, float[] dbfs)
+    {
+        float length = _height / dbfs.Length;
+        for (int i = 0; i < dbfs.Length; i++)
+        {
+            var x = (-MinimumVolumeMeterLevel + dbfs[i]) * _width / -MinimumVolumeMeterLevel;
+            if (x < 0)
+                x = 0;
+            else if (x > _width)
+                x = _width;
+            x -= Thickness;
+            Vector2 p1 = new(x, 0 + length * i);
+            Vector2 p2 = new(x, p1.Y + length);
+            drawingSession.DrawLine(p1, p2, VolumeMeterColor, 1);
+        }
     }
 
     public void Dispose()
@@ -86,20 +107,11 @@ public sealed partial class MixerChannel : UserControl
         WasapiAudioCapturingChannel.StopRecording();
     }
 
-    double dbfs = double.NegativeInfinity;
-    private double _dbfsToDrawOld = double.NegativeInfinity;
     TimeSpan prevUpdateTime = TimeSpan.Zero;
 
-    internal void UpdatePeak(object sender, TimeSpan elapsed)
+    private void VolumeSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        if (queueOfDbfs.Count == 0)
-            return;
-
-        dbfs = queueOfDbfs.Dequeue();
-        if (elapsed - prevUpdateTime > TimeSpan.FromSeconds(1))
-        {
-            prevUpdateTime = elapsed;
-        }
-        PeakVolumeCanvas.Invalidate();
+        float v = (float)(e.NewValue / (sender as Slider).Maximum);
+        WasapiAudioCapturingChannel.Volume = v * v;
     }
 }

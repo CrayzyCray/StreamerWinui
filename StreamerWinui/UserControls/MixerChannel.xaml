@@ -43,7 +43,8 @@
                 VerticalAlignment="Bottom" 
                 TickFrequency="10" 
                 TickPlacement="Outside"
-                Maximum="100" Minimum="0"/>
+                Maximum="100" Minimum="0"
+                ValueChanged="VolumeSlider_ValueChanged"/>
         </Grid>
     </Grid>
 </UserControl>
