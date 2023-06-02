@@ -1,6 +1,6 @@
 ﻿namespace StreamerLib;
 
-public class AudioBufferSlicer
+public sealed class AudioBufferSlicer
 {
     public int SliceSizeInBytes { get; }
 

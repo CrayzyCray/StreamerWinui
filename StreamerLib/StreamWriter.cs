@@ -1,7 +1,7 @@
 using System.Net;
 
 namespace StreamerLib;
-public unsafe class StreamWriter : IDisposable
+public unsafe sealed class StreamWriter : IDisposable
 {
     public const int DefaultPort = 10000;
 

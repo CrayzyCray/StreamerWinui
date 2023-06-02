@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace StreamerLib;
 
-public class WasapiAudioCapturingChannel
+public sealed class WasapiAudioCapturingChannel
 {
     public const float DefaultVolume = 1f;
     public const int QueueMaximumCapacity = 16;

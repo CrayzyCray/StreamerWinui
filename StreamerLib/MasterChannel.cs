@@ -2,26 +2,26 @@ using NAudio.CoreAudioApi;
 
 namespace StreamerLib;
 
-public class MasterChannel : IDisposable
+public sealed class MasterChannel : IDisposable
 {
     public const int SampleSizeInBytes = 4;
     public StreamWriter StreamWriter { get; }
-    public Encoders Encoder { get; }
-    public MasterChannelStates State { get; private set; } = MasterChannelStates.Monitoring;
+    public Codecs Codec { get; }
+    public MasterChannelStates State { get; private set; } = MasterChannelStates.Stopped;
     public int DevicesCount => _audioChannels.Count;
 
-    private AudioEncoder2 _audioEncoder;
+    private AudioEncoder _audioEncoder;
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
     private Thread? _mixerThread;
     private ManualResetEvent _manualResetEvent = new(false);
     private CancellationTokenSource _cancellationTokenSource = new();
 
-    public MasterChannel(StreamWriter streamWriter, Encoders encoder)
+    public MasterChannel(StreamWriter streamWriter, Codecs codec)
     {
-        StreamWriter = streamWriter;
-        Encoder = encoder;
-        _audioEncoder = new(StreamWriter, Encoder);
+        this.StreamWriter = streamWriter;
+        this.Codec = codec;
+        _audioEncoder = new(StreamWriter, codec);
         _masterBuffer = new byte[_audioEncoder.FrameSizeInBytes];
     }
 
@@ -94,7 +94,7 @@ public class MasterChannel : IDisposable
         State = MasterChannelStates.Monitoring;
         _cancellationTokenSource.Cancel();
         _manualResetEvent.Set();
-        _mixerThread.Join();
+        _mixerThread?.Join();
         _audioEncoder.Clean();
     }
 

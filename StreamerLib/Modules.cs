@@ -49,16 +49,16 @@ public unsafe struct PixelFormatConverter
 }
 */
 
-public struct Codec
+public readonly struct Codec
 {
     public string UserFriendlyName { get; }
     public string Name { get; }
-    public Encoders Encoder { get; }
+    public Codecs Encoder { get; }
     public MediaTypes MediaType { get; }
 
     public Codec(string UserFriendlyName,
         string Name,
-        Encoders Encoder,
+        Codecs Encoder,
         MediaTypes MediaType)
     {
         this.UserFriendlyName = UserFriendlyName;
@@ -68,7 +68,7 @@ public struct Codec
     }
 }
 
-public enum Encoders
+public enum Codecs
 {
     HevcNvenc,
     HevcAmf,
@@ -83,14 +83,3 @@ public enum MediaTypes
     Audio,
     Video
 }
-
-//hwframes
-//AVBufferRef* hwDeviceContext = null;
-//ffmpeg.av_hwdevice_ctx_create(&hwDeviceContext, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
-//AVBufferRef* hwFramesRef = ffmpeg.av_hwframe_ctx_alloc(hwDeviceContext);
-//AVHWFramesContext* hwFramesContext = (AVHWFramesContext*)(hwFramesRef->data);
-//hwFramesContext->format = AVPixelFormat.AV_PIX_FMT_D3D11;
-//hwFramesContext->sw_format = AVPixelFormat.AV_PIX_FMT_BGRA;
-//hwFramesContext->width = codecContext->width;
-//hwFramesContext->height = codecContext->height;
-//ffmpeg.av_hwframe_ctx_init(hwFramesRef);

@@ -141,111 +141,7 @@ public unsafe struct HardwareEncoder : IDisposable
 }
 */
 
-//public unsafe class AudioEncoder : IDisposable
-//{
-//    public const int AV_SAMPLE_FMT_FLT = 3;
-
-//    public int SampleSizeInBytes { get; } = 4;
-//    public int FrameSizeInSamples { get; }
-//    public int FrameSizeInBytes { get; }
-//    public int Channels { get; }
-//    public int StreamIndex { get; private set; } = -1;
-//    public int SampleRate => _sampleRate;
-//    public int SampleFormat => AV_SAMPLE_FMT_FLT;
-
-//    private IntPtr _codecContext;
-//    private IntPtr _avFrame;
-//    private IntPtr _packet;
-//    private StreamWriter? _streamWriter;
-//    private long _pts;
-//    private IntPtr _timebase;
-//    private IntPtr _codecParameters;
-//    private int _sampleRate;
-
-//    public AudioEncoder(StreamWriter streamWriter, Encoders encoder, int channels = 2)
-//    {
-//        string encoderName = encoder switch
-//        {
-//            Encoders.LibOpus => "libopus",
-//            _ => "libopus"
-//        };
-
-//        _sampleRate = 48000; //encoder specified
-//        Channels = channels;
-
-//        int frameSizeInSamples = -1;
-//        nint codecContext, packet, timebase, codecParameters, frame;
-
-//        FFmpegImport.AudioEncoder_Constructor(
-//            encoderName,
-//            48000,
-//            channels,
-//            &frameSizeInSamples,
-//            &codecContext,
-//            &packet,
-//            &timebase,
-//            &codecParameters,
-//            &frame);
-
-//        _codecContext = codecContext;
-//        _packet = packet;
-//        _timebase = timebase;
-//        _codecParameters = codecParameters;
-//        _avFrame = frame;
-        
-//        FrameSizeInSamples = frameSizeInSamples;
-//        FrameSizeInBytes = frameSizeInSamples * channels * SampleSizeInBytes;
-//    }
-
-//    public void EncodeAndWriteFrame(byte[] buffer)
-//    {
-//        if (StreamIndex == -1)
-//            return;
-//        if (buffer.Length != FrameSizeInBytes)
-//            throw new ArgumentException();
-
-//        bool success;
-//        fixed (byte* buf = buffer)
-//        {
-//            success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
-//                buf,
-//                FrameSizeInBytes,
-//                Channels,
-//                StreamIndex,
-//                _pts,
-//                _codecContext,
-//                _packet,
-//                _avFrame);
-//            if (success)
-//                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
-//        }
-
-//        _pts += FrameSizeInSamples;
-//    }
-
-//    public void Dispose()
-//    {
-//        FFmpegImport.AudioEncoder_Dispose(
-//            _packet, 
-//            _avFrame, 
-//            _codecContext, 
-//            _codecParameters, 
-//            _timebase);
-//    }
-
-//    public void Clean()
-//    {
-//        _pts = 0;
-//    }
-
-//    public void RegisterAVStream(StreamWriter streamWriter)
-//    {
-//        _streamWriter = streamWriter;
-//        StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
-//    }
-//}
-
-public unsafe class AudioEncoder2 : IDisposable
+public sealed class AudioEncoder : IDisposable
 {
     public const int AV_SAMPLE_FMT_FLT = 3;
     public const int SampleSizeInBytes = 4;
@@ -259,14 +155,14 @@ public unsafe class AudioEncoder2 : IDisposable
 
     EncoderParameters _encoderParameters;
     private StreamWriter _streamWriter;
-    private long _pts;
+    private long _packetTimeStamp;
 
-    public AudioEncoder2(StreamWriter streamWriter, Encoders encoder, int channels = 2)
+    public AudioEncoder(StreamWriter streamWriter, Codecs encoder, int channels = 2)
     {
         _streamWriter = streamWriter;
         string encoderName = encoder switch
         {
-            Encoders.LibOpus => "libopus",
+            Codecs.LibOpus => "libopus",
             _ => "libopus"
         };
 
@@ -283,22 +179,26 @@ public unsafe class AudioEncoder2 : IDisposable
             throw new ArgumentException();
 
         bool success;
-        fixed (byte* buf = buffer)
+
+        unsafe
         {
-            success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
-                buf,
-                FrameSizeInBytes,
-                Channels,
-                StreamIndex,
-                _pts,
-                _encoderParameters.CodecContext,
-                _encoderParameters.Packet,
-                _encoderParameters.Frame);
-            if (success)
-                _streamWriter.WriteFrame(_encoderParameters.Packet, _encoderParameters.Timebase, StreamIndex);
+            fixed (byte* buf = buffer)
+            {
+                success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
+                    buf,
+                    FrameSizeInBytes,
+                    Channels,
+                    StreamIndex,
+                    _packetTimeStamp,
+                    _encoderParameters.CodecContext,
+                    _encoderParameters.Packet,
+                    _encoderParameters.Frame);
+                if (success)
+                    _streamWriter.WriteFrame(_encoderParameters.Packet, _encoderParameters.Timebase, StreamIndex);
+            }
         }
 
-        _pts += FrameSizeInSamples;
+        _packetTimeStamp += FrameSizeInSamples;
     }
 
     public void Dispose()
@@ -313,7 +213,7 @@ public unsafe class AudioEncoder2 : IDisposable
 
     public void Clean()
     {
-        _pts = 0;
+        _packetTimeStamp = 0;
     }
 
     public void RegisterAVStream(StreamWriter streamWriter)
@@ -335,14 +235,3 @@ public struct EncoderParameters
     public nint CodecParameters;
     public nint Frame;
 }
-
-//hwframes
-//AVBufferRef* hwDeviceContext = null;
-//ffmpeg.av_hwdevice_ctx_create(&hwDeviceContext, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
-//AVBufferRef* hwFramesRef = ffmpeg.av_hwframe_ctx_alloc(hwDeviceContext);
-//AVHWFramesContext* hwFramesContext = (AVHWFramesContext*)(hwFramesRef->data);
-//hwFramesContext->format = AVPixelFormat.AV_PIX_FMT_D3D11;
-//hwFramesContext->sw_format = AVPixelFormat.AV_PIX_FMT_BGRA;
-//hwFramesContext->width = codecContext->width;
-//hwFramesContext->height = codecContext->height;
-//ffmpeg.av_hwframe_ctx_init(hwFramesRef);

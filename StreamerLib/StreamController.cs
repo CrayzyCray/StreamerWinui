@@ -4,10 +4,10 @@ using System.Net;
 using System.Text;
 
 namespace StreamerLib;
-public class StreamController
+public sealed class StreamController
 {
-    public const Encoders DefaultVideoEncoder = Encoders.HevcNvenc;
-    public const Encoders DefaultAudioEncoder = Encoders.LibOpus;
+    public const Codecs DefaultVideoEncoder = Codecs.HevcNvenc;
+    public const Codecs DefaultAudioEncoder = Codecs.LibOpus;
     
     public bool StreamIsActive => _streamIsActive;
     /// <summary>
@@ -145,11 +145,11 @@ public class StreamController
 
     public static readonly Codec[] SupportedCodecs =
     {
-        new Codec("hevc Nvidia", "hevc_nvenc", Encoders.HevcNvenc, MediaTypes.Video),
-        new Codec("hevc AMD", "hevc_amf", Encoders.HevcAmf, MediaTypes.Video),
-        new Codec("h264 Nvidia", "h264_nvenc", Encoders.H264Nvenc, MediaTypes.Video),
-        new Codec("h264 AMD", "h264_amf", Encoders.H264Amf, MediaTypes.Video),
-        new Codec("AV1 Nvidia", "av1_nvenc", Encoders.Av1Nvenc, MediaTypes.Video),
-        new Codec("Opus", "libopus", Encoders.LibOpus, MediaTypes.Audio)
+        new Codec("hevc Nvidia", "hevc_nvenc", Codecs.HevcNvenc, MediaTypes.Video),
+        new Codec("hevc AMD", "hevc_amf", Codecs.HevcAmf, MediaTypes.Video),
+        new Codec("h264 Nvidia", "h264_nvenc", Codecs.H264Nvenc, MediaTypes.Video),
+        new Codec("h264 AMD", "h264_amf", Codecs.H264Amf, MediaTypes.Video),
+        new Codec("AV1 Nvidia", "av1_nvenc", Codecs.Av1Nvenc, MediaTypes.Video),
+        new Codec("Opus", "libopus", Codecs.LibOpus, MediaTypes.Audio)
     };
 }
