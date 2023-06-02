@@ -66,52 +66,12 @@ struct StreamParameters
 	AVRational* Timebase;
 };
 
-DllExport void Here()
-{
-	LogToFile("\n\nhere%d\n\n", -1);
-}
-
 inline void PrintAVError(int errnum)
 {
 	char str[64];
 	av_strerror(errnum, &str, 64);
 	LogToFile(str);
 	LogToFile("\n");
-}
-
-DllExport int __stdcall AudioEncoder_Constructor(
-	const char* encoderName,
-	int _sampleRate, 
-	int channels,
-	int* frameSizeInSamples,
-	AVCodecContext** codecContextOut,
-	AVPacket** packetOut, 
-	AVRational** timebaseOut,
-	AVCodecParameters** codecParametersOut,
-	AVFrame** avFrameOut) 
-{
-	AVCodec* codec = avcodec_find_encoder_by_name(encoderName);
-	AVCodecContext* codecContext = avcodec_alloc_context3(codec);
-	codecContext->sample_rate = _sampleRate;
-	codecContext->sample_fmt = AV_SAMPLE_FMT_FLT;
-	av_channel_layout_default(&codecContext->ch_layout, channels);
-	avcodec_open2(codecContext, codec, NULL);
-
-	AVCodecParameters* codecParameters = avcodec_parameters_alloc();
-	avcodec_parameters_from_context(codecParameters, codecContext);
-	*codecParametersOut = codecParameters;
-
-	*frameSizeInSamples = codecContext->frame_size;
-	AVFrame* avFrame = av_frame_alloc();
-	avFrame->nb_samples = *frameSizeInSamples;
-	av_channel_layout_default(&avFrame->ch_layout, channels);
-	avFrame->format = AV_SAMPLE_FMT_FLT;
-	
-	*codecContextOut = codecContext;
-	*packetOut = av_packet_alloc();
-	*timebaseOut = &(codecContext->time_base);
-	*avFrameOut = avFrame;
-	LogToFile("AudioEncoder_Constructor\ntimebase = %d/%d\n", (**timebaseOut).num, (**timebaseOut).den);
 }
 
 DllExport bool __stdcall AudioEncoder_EncodeAndWriteFrame(

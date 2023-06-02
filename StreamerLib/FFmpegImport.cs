@@ -7,21 +7,6 @@ public static unsafe partial class FFmpegImport
     private const string DllPath = "DLLs/Dll.dll";
 
     [LibraryImport(DllPath)]
-    public static partial void Here();
-    
-    [LibraryImport(DllPath)]
-    internal static partial int AudioEncoder_Constructor(
-        [MarshalAs(UnmanagedType.LPStr)] String encoderName,
-        int _sampleRate,
-        int channels,
-        int* FrameSizeInSamples,
-        nint* _codecContextOut,
-        nint* _packetOut,
-        nint* _timebaseOut,
-        nint* _codecParametersOut,
-        nint* _avFrameOut);
-
-    [LibraryImport(DllPath)]
     internal static partial int AudioEncoder_Dispose(
         nint packet,
         nint frame,

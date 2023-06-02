@@ -4,7 +4,7 @@ namespace StreamerLib;
 
 unsafe public sealed partial class LibUtil
 {
-    const string LibPath = "libutil.dll";
+    const string LibPath = "DLLs/libutil.dll";
 
     [LibraryImport(LibPath)]
     internal static partial float get_peak(void* array, int length);
@@ -12,6 +12,8 @@ unsafe public sealed partial class LibUtil
     internal static partial float get_peak_multichannel(void* array, int length, int channels, int channel_index);
     [LibraryImport(LibPath)]
     public static partial void apply_volume(void* array, int length, float volume);
+    [LibraryImport(LibPath)]
+    internal static partial EncoderParameters audio_encoder_constructor([MarshalAs(UnmanagedType.LPStr)] String name, int channels, int requiredSampleRate);
 
     public static float GetPeak(byte[] array, int length)
     {

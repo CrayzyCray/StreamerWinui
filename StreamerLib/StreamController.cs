@@ -69,6 +69,7 @@ public class StreamController
 
     public void StartStream()
     {
+        _audioCapturing = true;
         ValidateParameters();
 
         if (_audioCapturing)

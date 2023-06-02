@@ -10,10 +10,10 @@ public class MasterChannel : IDisposable
     public MasterChannelStates State { get; private set; } = MasterChannelStates.Monitoring;
     public int DevicesCount => _audioChannels.Count;
 
-    private AudioEncoder _audioEncoder;
+    private AudioEncoder2 _audioEncoder;
     private List<WasapiAudioCapturingChannel> _audioChannels = new(2);
     private byte[] _masterBuffer;
-    private Thread _mixerThread;
+    private Thread? _mixerThread;
     private ManualResetEvent _manualResetEvent = new(false);
     private CancellationTokenSource _cancellationTokenSource = new();
 

@@ -2,15 +2,12 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using StreamerLib;
 using StreamerWinui.UserControls;
 using System;
-using Windows.Graphics;
-using Windows.Storage.AccessCache;
-using Windows.Storage.Pickers;
-using Windows.Storage;
-using WinRT;
 using System.IO;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using WinRT;
 
 namespace StreamerWinui
 {
@@ -20,7 +17,7 @@ namespace StreamerWinui
         private StreamerLib.StreamController _streamController = new();
         private MixerControl _mixerChannelControl;
 
-        public static readonly SizeInt32 DefaultWindowSize = new(380, 500);
+        public static readonly Windows.Graphics.SizeInt32 DefaultWindowSize = new(380, 500);
 
         private string _folderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         private string _fileName = "Recording1";
@@ -127,10 +124,8 @@ namespace StreamerWinui
 
         private void WindowClosed(object sender, WindowEventArgs args)
         {
-            if (_mixerChannelControl != null)
-                _mixerChannelControl.Dispose();
-            if (m_micaController != null)
-                m_micaController.Dispose();
+            _mixerChannelControl?.Dispose();
+            m_micaController?.Dispose();
             this.Activated -= WindowActivated;
             m_configurationSource = null;
         }
@@ -143,18 +138,12 @@ namespace StreamerWinui
 
         private void SetConfigurationSourceTheme()
         {
-            switch (((FrameworkElement)this.Content).ActualTheme)
+            m_configurationSource.Theme = (this.Content as FrameworkElement).ActualTheme switch
             {
-                case ElementTheme.Dark: 
-                    m_configurationSource.Theme = Microsoft.UI.Composition.SystemBackdrops.SystemBackdropTheme.Dark;
-                    break;
-                case ElementTheme.Light: 
-                    m_configurationSource.Theme = Microsoft.UI.Composition.SystemBackdrops.SystemBackdropTheme.Light;
-                    break;
-                case ElementTheme.Default: 
-                    m_configurationSource.Theme = Microsoft.UI.Composition.SystemBackdrops.SystemBackdropTheme.Default;
-                    break;
-            }
+                ElementTheme.Dark => Microsoft.UI.Composition.SystemBackdrops.SystemBackdropTheme.Dark,
+                ElementTheme.Light => Microsoft.UI.Composition.SystemBackdrops.SystemBackdropTheme.Light,
+                ElementTheme.Default => Microsoft.UI.Composition.SystemBackdrops.SystemBackdropTheme.Default
+            };
         }
 
         private AppWindow GetAppWindowForCurrentWindow()

@@ -1,4 +1,6 @@
-﻿namespace StreamerLib;
+﻿using System.Runtime.InteropServices;
+
+namespace StreamerLib;
 
 /*
 public unsafe struct Ddagrab : IDisposable
@@ -139,60 +141,138 @@ public unsafe struct HardwareEncoder : IDisposable
 }
 */
 
-public unsafe class AudioEncoder : IDisposable
+//public unsafe class AudioEncoder : IDisposable
+//{
+//    public const int AV_SAMPLE_FMT_FLT = 3;
+
+//    public int SampleSizeInBytes { get; } = 4;
+//    public int FrameSizeInSamples { get; }
+//    public int FrameSizeInBytes { get; }
+//    public int Channels { get; }
+//    public int StreamIndex { get; private set; } = -1;
+//    public int SampleRate => _sampleRate;
+//    public int SampleFormat => AV_SAMPLE_FMT_FLT;
+
+//    private IntPtr _codecContext;
+//    private IntPtr _avFrame;
+//    private IntPtr _packet;
+//    private StreamWriter? _streamWriter;
+//    private long _pts;
+//    private IntPtr _timebase;
+//    private IntPtr _codecParameters;
+//    private int _sampleRate;
+
+//    public AudioEncoder(StreamWriter streamWriter, Encoders encoder, int channels = 2)
+//    {
+//        string encoderName = encoder switch
+//        {
+//            Encoders.LibOpus => "libopus",
+//            _ => "libopus"
+//        };
+
+//        _sampleRate = 48000; //encoder specified
+//        Channels = channels;
+
+//        int frameSizeInSamples = -1;
+//        nint codecContext, packet, timebase, codecParameters, frame;
+
+//        FFmpegImport.AudioEncoder_Constructor(
+//            encoderName,
+//            48000,
+//            channels,
+//            &frameSizeInSamples,
+//            &codecContext,
+//            &packet,
+//            &timebase,
+//            &codecParameters,
+//            &frame);
+
+//        _codecContext = codecContext;
+//        _packet = packet;
+//        _timebase = timebase;
+//        _codecParameters = codecParameters;
+//        _avFrame = frame;
+        
+//        FrameSizeInSamples = frameSizeInSamples;
+//        FrameSizeInBytes = frameSizeInSamples * channels * SampleSizeInBytes;
+//    }
+
+//    public void EncodeAndWriteFrame(byte[] buffer)
+//    {
+//        if (StreamIndex == -1)
+//            return;
+//        if (buffer.Length != FrameSizeInBytes)
+//            throw new ArgumentException();
+
+//        bool success;
+//        fixed (byte* buf = buffer)
+//        {
+//            success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
+//                buf,
+//                FrameSizeInBytes,
+//                Channels,
+//                StreamIndex,
+//                _pts,
+//                _codecContext,
+//                _packet,
+//                _avFrame);
+//            if (success)
+//                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
+//        }
+
+//        _pts += FrameSizeInSamples;
+//    }
+
+//    public void Dispose()
+//    {
+//        FFmpegImport.AudioEncoder_Dispose(
+//            _packet, 
+//            _avFrame, 
+//            _codecContext, 
+//            _codecParameters, 
+//            _timebase);
+//    }
+
+//    public void Clean()
+//    {
+//        _pts = 0;
+//    }
+
+//    public void RegisterAVStream(StreamWriter streamWriter)
+//    {
+//        _streamWriter = streamWriter;
+//        StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
+//    }
+//}
+
+public unsafe class AudioEncoder2 : IDisposable
 {
     public const int AV_SAMPLE_FMT_FLT = 3;
+    public const int SampleSizeInBytes = 4;
 
-    public int SampleSizeInBytes { get; } = 4;
-    public int FrameSizeInSamples { get; }
+    public int FrameSizeInSamples => _encoderParameters.FrameSizeInSamples;
     public int FrameSizeInBytes { get; }
-    public int Channels { get; }
+    public int Channels => _encoderParameters.Channels;
     public int StreamIndex { get; private set; } = -1;
-    public int SampleRate => _sampleRate;
+    public int SampleRate => _encoderParameters.SampleRate;
     public int SampleFormat => AV_SAMPLE_FMT_FLT;
 
-    private IntPtr _codecContext;
-    private IntPtr _avFrame;
-    private IntPtr _packet;
-    private StreamWriter? _streamWriter;
+    EncoderParameters _encoderParameters;
+    private StreamWriter _streamWriter;
     private long _pts;
-    private IntPtr _timebase;
-    private IntPtr _codecParameters;
-    private int _sampleRate;
 
-    public AudioEncoder(StreamWriter streamWriter, Encoders encoder, int channels = 2)
+    public AudioEncoder2(StreamWriter streamWriter, Encoders encoder, int channels = 2)
     {
+        _streamWriter = streamWriter;
         string encoderName = encoder switch
         {
             Encoders.LibOpus => "libopus",
             _ => "libopus"
         };
 
-        _sampleRate = 48000; //encoder specified
-        Channels = channels;
+        _encoderParameters = LibUtil.audio_encoder_constructor(encoderName, channels, 48000);
 
-        int frameSizeInSamples = -1;
-        nint codecContext, packet, timebase, codecParameters, frame;
-
-        FFmpegImport.AudioEncoder_Constructor(
-            encoderName,
-            48000,
-            channels,
-            &frameSizeInSamples,
-            &codecContext,
-            &packet,
-            &timebase,
-            &codecParameters,
-            &frame);
-
-        _codecContext = codecContext;
-        _packet = packet;
-        _timebase = timebase;
-        _codecParameters = codecParameters;
-        _avFrame = frame;
-        
-        FrameSizeInSamples = frameSizeInSamples;
-        FrameSizeInBytes = frameSizeInSamples * channels * SampleSizeInBytes;
+        FrameSizeInBytes = _encoderParameters.FrameSizeInSamples * channels * SampleSizeInBytes;
     }
 
     public void EncodeAndWriteFrame(byte[] buffer)
@@ -211,11 +291,11 @@ public unsafe class AudioEncoder : IDisposable
                 Channels,
                 StreamIndex,
                 _pts,
-                _codecContext,
-                _packet,
-                _avFrame);
+                _encoderParameters.CodecContext,
+                _encoderParameters.Packet,
+                _encoderParameters.Frame);
             if (success)
-                _streamWriter.WriteFrame(_packet, _timebase, StreamIndex);
+                _streamWriter.WriteFrame(_encoderParameters.Packet, _encoderParameters.Timebase, StreamIndex);
         }
 
         _pts += FrameSizeInSamples;
@@ -224,11 +304,11 @@ public unsafe class AudioEncoder : IDisposable
     public void Dispose()
     {
         FFmpegImport.AudioEncoder_Dispose(
-            _packet, 
-            _avFrame, 
-            _codecContext, 
-            _codecParameters, 
-            _timebase);
+            _encoderParameters.Packet,
+            _encoderParameters.Frame,
+            _encoderParameters.CodecContext,
+            _encoderParameters.CodecParameters,
+            _encoderParameters.Timebase);
     }
 
     public void Clean()
@@ -239,44 +319,22 @@ public unsafe class AudioEncoder : IDisposable
     public void RegisterAVStream(StreamWriter streamWriter)
     {
         _streamWriter = streamWriter;
-        StreamIndex = _streamWriter.AddAvStream(_codecParameters, _timebase);
+        StreamIndex = _streamWriter.AddAvStream(_encoderParameters.CodecParameters, _encoderParameters.Timebase);
     }
 }
 
-/*
-public static class FFmpegHelper
+[StructLayout(LayoutKind.Sequential)]
+public struct EncoderParameters
 {
-    public static unsafe void ErrStrPrint(int errNum)
-    {
-        int maxErrorStringSize = 64;
-        byte[] str1 = new byte[maxErrorStringSize];
-        fixed (byte* str2 = str1)
-        {
-            ffmpeg.av_make_error_string(str2, 64, errNum);
-            DebugLogUnmanagedPtr(str2);
-        }
-    }
-    
-    public static void InicializeFFmpeg()
-    {
-        SetFfmpegBinaresPath(@"C:\Users\Cray\Desktop\Programs\ffmpeg");
-        DynamicallyLoadedBindings.Initialize();
-    }
-
-    public static unsafe void DebugLogUnmanagedPtr(byte* ptr) =>
-        Debug.WriteLine(Marshal.PtrToStringAnsi((IntPtr)ptr));
-
-    public static unsafe string UnmanagedPtrToString(byte* ptr) =>
-        Marshal.PtrToStringAnsi((IntPtr)ptr) ?? String.Empty;
-
-    static void SetFfmpegBinaresPath()=>
-        DynamicallyLoadedBindings.LibrariesPath = Path.Combine(Environment.CurrentDirectory, "ffmpeg", "bin");
-
-    static void SetFfmpegBinaresPath(string path) =>
-        DynamicallyLoadedBindings.LibrariesPath = path; 
+    public int SampleRate;
+    public int Channels;
+    public int FrameSizeInSamples;
+    public nint CodecContext;
+    public nint Packet;
+    public nint Timebase;
+    public nint CodecParameters;
+    public nint Frame;
 }
-*/
-
 
 //hwframes
 //AVBufferRef* hwDeviceContext = null;
