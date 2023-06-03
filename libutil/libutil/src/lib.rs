@@ -81,6 +81,7 @@ pub unsafe extern fn audio_encoder_constructor(name: *const i8, channels: i32, r
         sample_rate: (*codec_context).sample_rate,
         channels,
         frame_size_in_samples,
+        frame_size_in_bytes: frame_size_in_samples * channels * 4,
         codec_context,
         packet,
         time_base: &mut (*codec_context).time_base as *mut AVRational,
@@ -89,12 +90,27 @@ pub unsafe extern fn audio_encoder_constructor(name: *const i8, channels: i32, r
     }
 }
 
+#[no_mangle]
+pub unsafe extern fn audio_encoder_encode_buffer(parameters: EncoderParameters, buffer: *const u8, pts: i64, stream_index: i32) -> i32 {
+    av_packet_unref(parameters.packet);
+    (*parameters.frame).pts = pts;
+    let mut ret = avcodec_fill_audio_frame(parameters.frame, parameters.channels, AVSampleFormat_AV_SAMPLE_FMT_FLT, buffer, parameters.frame_size_in_bytes, parameters.channels * 4);
+    if ret < 0 {return ret};
+    ret = avcodec_send_frame(parameters.codec_context, parameters.frame);
+    if ret < 0 {return ret};
+    ret = avcodec_receive_packet(parameters.codec_context, parameters.packet);
+    if ret == 0 {
+        (*parameters.packet).stream_index = stream_index};
+    return ret;
+}
+
 #[repr(C)]
 pub struct EncoderParameters
 {
     sample_rate: i32,
     channels: i32,
     frame_size_in_samples: i32,
+    frame_size_in_bytes: i32,
     codec_context: *mut AVCodecContext,
     packet: *mut AVPacket,
     time_base: *mut AVRational,

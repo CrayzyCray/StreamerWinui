@@ -10,132 +10,12 @@
 #pragma comment(lib, "avfilter.lib")
 
 #define DllExport __declspec(dllexport)
-#define TRACE_ST_LogToFile 1
-#define TRACE_ST_LogToConsole 2
-#define TRACE_ST false
-
-#if TRACE_ST == 1
-	#include <stdio.h>
-	#include <time.h>
-	FILE* _logFile;
-	const char* path = "C:\\Users\\Cray\\Desktop\\dbg.log";
-	bool isFirstLogToFile = true;
-
-	void inline LogToFile(const char* format, ...)
-	{
-		if (isFirstLogToFile)
-		{
-			isFirstLogToFile = false;
-			if (_logFile == NULL)
-			{
-				fopen_s(&_logFile, path, "w");
-				if (_logFile == NULL)
-					return;
-				time_t current_time = time(NULL);
-				struct tm local_time;
-				localtime_s(&local_time, &current_time);
-				char str[64];
-				asctime_s(&str, sizeof str, &local_time);
-				fprintf(_logFile, "File opened\nDate:%s\n\n", str);
-			}
-		}
-	
-		va_list ap;
-		va_start(ap, format);
-		vfprintf(_logFile, format, ap);
-	}
-#elif TRACE_ST == 2
-	#include <stdio.h>
-	#include <time.h>
-	bool isFirstLogToFile = true;
-
-	void inline LogToFile(const char* format, ...)
-	{
-
-		va_list ap;
-		va_start(ap, format);
-		vprintf(format, ap);
-	}
-#else
-	#define LogToFile(...)
-#endif
 
 struct StreamParameters
 {
 	AVCodecParameters* CodecParameters;
 	AVRational* Timebase;
 };
-
-inline void PrintAVError(int errnum)
-{
-	char str[64];
-	av_strerror(errnum, &str, 64);
-	LogToFile(str);
-	LogToFile("\n");
-}
-
-DllExport bool __stdcall AudioEncoder_EncodeAndWriteFrame(
-	const uint8_t* buffer, 
-	int frameSizeInBytes,
-	int channels,
-	int streamIndex,
-	__int64 pts,
-	AVCodecContext* codecContext,
-	AVPacket* packet,
-	AVFrame* frame)
-{
-	LogToFile("\nAudioEncoder_EncodeAndWriteFrame\n");
-	int ret;
-	av_packet_unref(packet);
-	//av_frame_unref(frame);
-	//frame->nb_samples = codecContext->frame_size;
-	frame->pts = pts;
-	//av_channel_layout_default(&frame->ch_layout, channels);
-	//LogToFileMy("%d\n", frame->nb_samples);
-	
-	LogToFile("fill parameters: frame=%p channels=%d buffer=%p frameSize=%d\n", frame, channels, buffer, frameSizeInBytes);
-	ret = 0;
-	/*AVFrame* testFrame = av_frame_alloc();
-	testFrame->nb_samples = 960;
-	testFrame->format = codecContext->sample_fmt;
-	testFrame->sample_rate = codecContext->sample_rate;
-	av_channel_layout_default(&(testFrame->ch_layout), 2);*/
- 	ret = avcodec_fill_audio_frame(frame, channels, AV_SAMPLE_FMT_FLT, buffer, frameSizeInBytes, 4 * channels);
-	if (ret < 0)
-	{
-		LogToFile("fill error: ");
-		PrintAVError(ret);
-		return false;
-	}
-
-	ret = avcodec_send_frame(codecContext, frame);
-	if (ret < 0)
-	{
-		LogToFile("send error: ");
-		PrintAVError(ret);
-		return false;
-	}
-
-	LogToFile("frame pts = %d\n", pts);
-
-	ret = avcodec_receive_packet(codecContext, packet);
-	if (ret < 0)
-	{
-		LogToFile("recieve error: ");
-		PrintAVError(ret);
-		return false;
-	}
-
-	if (ret == 0)
-	{
-
-		packet->stream_index = streamIndex;
-		LogToFile("packet pts = %d\n", packet->pts);
-		return true;
-	}
-
-	return false;
-}
 
 DllExport int AudioEncoder_Dispose(
 	AVPacket* packet,
@@ -185,7 +65,6 @@ DllExport int StreamWriter_AddClientAsFile(
 	struct StreamParameters* streamParameters,
 	int streamParametersLength)
 {
-	LogToFile("\nStreamWriter_AddClientAsFile\n");
 	AVFormatContext* formatContext;
 	avformat_alloc_output_context2(&formatContext, NULL, NULL, path);
 	for (int i = 0; i < streamParametersLength; i++)
@@ -206,7 +85,6 @@ DllExport int StreamWriter_AddClientAsFile(
 	for (int i = 0; i < streamParametersLength; i++)
 	{
 		streamParameters[i].Timebase = &(formatContext->streams[i]->time_base);
-		LogToFile("stream%d tb: %d/%d\n", i, formatContext->streams[i]->time_base.num, formatContext->streams[i]->time_base.den);
 	}
 }
 
@@ -225,18 +103,13 @@ DllExport int StreamWriter_WriteFrame(
 	int formatContextsCount)
 {
 	av_packet_rescale_ts(packet, *packetTimebase, *streamTimebase);
-	LogToFile("\nStreamWriter_WriteFrame\nClients: %d\n", formatContextsCount);
-	LogToFile("packet pts rescaled from %d/%d to %d/%d\n", packetTimebase->num, packetTimebase->den, streamTimebase->num, streamTimebase->den);
 	for (int i = 0; i < formatContextsCount; i++)
 	{
 		int ret = av_write_frame(formatContexts[i], packet);
-		LogToFile("Here2\n");
 		if (ret < 0)
 		{
-			LogToFile("Here3\n");
 			return ret;
 		}
 	}
-	LogToFile("Here4\n");
 	return 0;
 }

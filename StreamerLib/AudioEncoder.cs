@@ -178,25 +178,15 @@ public sealed class AudioEncoder : IDisposable
         if (buffer.Length != FrameSizeInBytes)
             throw new ArgumentException();
 
-        bool success;
+        int ret = 0;
 
         unsafe
         {
             fixed (byte* buf = buffer)
-            {
-                success = FFmpegImport.AudioEncoder_EncodeAndWriteFrame(
-                    buf,
-                    FrameSizeInBytes,
-                    Channels,
-                    StreamIndex,
-                    _packetTimeStamp,
-                    _encoderParameters.CodecContext,
-                    _encoderParameters.Packet,
-                    _encoderParameters.Frame);
-                if (success)
-                    _streamWriter.WriteFrame(_encoderParameters.Packet, _encoderParameters.Timebase, StreamIndex);
-            }
+                ret = LibUtil.audio_encoder_encode_buffer(_encoderParameters, buf, _packetTimeStamp, StreamIndex);
         }
+            if (ret >= 0)
+                _streamWriter.WriteFrame(_encoderParameters.Packet, _encoderParameters.Timebase, StreamIndex);
 
         _packetTimeStamp += FrameSizeInSamples;
     }
@@ -211,7 +201,7 @@ public sealed class AudioEncoder : IDisposable
             _encoderParameters.Timebase);
     }
 
-    public void Clean()
+    public void ResetPacketTimeStamp()
     {
         _packetTimeStamp = 0;
     }
@@ -221,17 +211,4 @@ public sealed class AudioEncoder : IDisposable
         _streamWriter = streamWriter;
         StreamIndex = _streamWriter.AddAvStream(_encoderParameters.CodecParameters, _encoderParameters.Timebase);
     }
-}
-
-[StructLayout(LayoutKind.Sequential)]
-public struct EncoderParameters
-{
-    public int SampleRate;
-    public int Channels;
-    public int FrameSizeInSamples;
-    public nint CodecContext;
-    public nint Packet;
-    public nint Timebase;
-    public nint CodecParameters;
-    public nint Frame;
 }

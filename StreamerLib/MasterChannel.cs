@@ -95,7 +95,7 @@ public sealed class MasterChannel : IDisposable
         _cancellationTokenSource.Cancel();
         _manualResetEvent.Set();
         _mixerThread?.Join();
-        _audioEncoder.Clean();
+        _audioEncoder.ResetPacketTimeStamp();
     }
 
     public void Stop()

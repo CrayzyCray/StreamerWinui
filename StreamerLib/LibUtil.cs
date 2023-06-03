@@ -14,6 +14,11 @@ unsafe public sealed partial class LibUtil
     public static partial void apply_volume(void* array, int length, float volume);
     [LibraryImport(LibPath)]
     internal static partial EncoderParameters audio_encoder_constructor([MarshalAs(UnmanagedType.LPStr)] String name, int channels, int requiredSampleRate);
+    /// <returns>< 0 if error</returns>
+    [LibraryImport(LibPath)]
+    internal static partial int audio_encoder_encode_buffer(EncoderParameters parameters, byte* buffer, Int64 pts, int streamIndex);
+
+
 
     public static float GetPeak(byte[] array, int length)
     {
@@ -44,4 +49,18 @@ unsafe public sealed partial class LibUtil
         fixed (byte* ptr = array)
             apply_volume(ptr, length / 4, volume);
     }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct EncoderParameters
+{
+    public int SampleRate;
+    public int Channels;
+    public int FrameSizeInSamples;
+    public int FrameSizeInBytes;
+    public nint CodecContext;
+    public nint Packet;
+    public nint Timebase;
+    public nint CodecParameters;
+    public nint Frame;
 }
