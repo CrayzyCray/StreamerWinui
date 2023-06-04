@@ -191,14 +191,10 @@ public sealed class AudioEncoder : IDisposable
         _packetTimeStamp += FrameSizeInSamples;
     }
 
-    public void Dispose()
+    public unsafe void Dispose()
     {
-        FFmpegImport.AudioEncoder_Dispose(
-            _encoderParameters.Packet,
-            _encoderParameters.Frame,
-            _encoderParameters.CodecContext,
-            _encoderParameters.CodecParameters,
-            _encoderParameters.Timebase);
+        fixed(EncoderParameters* ptr =  &_encoderParameters)
+            LibUtil.audio_encoder_dispose(ptr);
     }
 
     public void ResetPacketTimeStamp()

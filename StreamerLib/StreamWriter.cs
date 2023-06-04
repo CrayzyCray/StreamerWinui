@@ -1,4 +1,6 @@
 using System.Net;
+using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace StreamerLib;
 public unsafe sealed class StreamWriter : IDisposable
@@ -28,14 +30,10 @@ public unsafe sealed class StreamWriter : IDisposable
         string outputUrl = $"rist://{ipAddress}:{port}";
 
         nint formatContext;
-        fixed (StreamParameters* ptr = _streamParameters)
-            FFmpegImport.StreamWriter_AddClient(
-                outputUrl,
-                &formatContext,
-                ptr,
-                _streamParameters.Length);
+        fixed (StreamParameters* parameters = _streamParameters)
+            formatContext = LibUtil.stream_writer_add_client(outputUrl, parameters, _streamParameters.Length);
 
-        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, IP = ipAddress, Port = port });
+        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, /*IP = ipAddress.ToString(),*/ Port = port });
 
         return true;
     }
@@ -46,11 +44,10 @@ public unsafe sealed class StreamWriter : IDisposable
             return false;
 
         nint formatContext;
-        fixed (StreamParameters* ptr = _streamParameters)
-            FFmpegImport.StreamWriter_AddClientAsFile(
+        fixed (StreamParameters* parameters = _streamParameters)
+            formatContext = LibUtil.stream_writer_add_client_as_file(
                 path,
-                &formatContext,
-                ptr,
+                parameters,
                 _streamParameters.Length);
 
         _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, IsFile = true });
@@ -67,7 +64,7 @@ public unsafe sealed class StreamWriter : IDisposable
     private void DeleteAllClients()
     {
         foreach (var fc in _streamClientsList)
-            FFmpegImport.StreamWriter_CloseFormatContext(fc.FormatContext);
+            LibUtil.stream_writer_close_format_context(fc.FormatContext);
 
         _streamClientsList.Clear();
     }
@@ -84,12 +81,15 @@ public unsafe sealed class StreamWriter : IDisposable
         for (int i = 0; i < _streamClientsList.Count; i++)
             formatContexts[i] = _streamClientsList[i].FormatContext;
 
-        int ret = FFmpegImport.StreamWriter_WriteFrame(
-            packet,
-            packetTimebase,
-            _streamParameters[streamIndex].Timebase,
-            formatContexts,
-            formatContexts.Length);
+        int ret;
+        fixed (StreamClient* ptr = _streamClientsList.ToArray())
+            ret = LibUtil.stream_writer_write_packet(packet, packetTimebase, ptr, formatContexts.Length);
+        //int ret = FFmpegImport.StreamWriter_WriteFrame(
+        //    packet,
+        //    packetTimebase,
+        //    _streamParameters[streamIndex].Timebase,
+        //    formatContexts,
+        //    formatContexts.Length);
 
         return ret;
     }
@@ -99,9 +99,10 @@ public unsafe sealed class StreamWriter : IDisposable
         DeleteAllClients();
     }
 
-    public class StreamClient
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StreamClient
     {
-        public IPAddress? IP;
+        //public String? IP;
         public int Port;
         public nint FormatContext;
         public bool IsFile;

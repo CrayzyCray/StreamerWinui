@@ -2,6 +2,7 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using StreamerWinui.UserControls;
 using System;
 using System.IO;
@@ -27,7 +28,8 @@ namespace StreamerWinui
         {
             InitializeComponent();
             CreateMixerChannelControl();
-            TrySetMicaBackdrop();
+            //TrySetMicaBackdrop();
+            this.SystemBackdrop = new MicaBackdrop();
 
             m_AppWindow = GetAppWindowForCurrentWindow();
             m_AppWindow.Resize(DefaultWindowSize);

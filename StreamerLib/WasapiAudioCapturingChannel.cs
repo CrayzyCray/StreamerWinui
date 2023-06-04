@@ -106,13 +106,14 @@ public sealed class WasapiAudioCapturingChannel
         DataAvailable.Invoke(this, args);
     }
 
-    private unsafe void ApplyVolume(byte[] buffer, int bufferLength, float volume)
+    private void ApplyVolume(byte[] buffer, int bufferLengthInBytes, float volume)
     {
-        fixed (byte* ptr = buffer)
+        if (volume < 0f)
+            return;
+        unsafe
         {
-            float* bufferFloat = (float*)ptr;
-            for (int i = 0; i < bufferLength / 4; i++)
-                bufferFloat[i] *= volume;
+            fixed (byte* ptr = buffer)
+                LibUtil.apply_volume(ptr, bufferLengthInBytes / 4, volume);
         }
     }
 
