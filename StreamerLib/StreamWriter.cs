@@ -1,5 +1,4 @@
 using System.Net;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace StreamerLib;
@@ -32,8 +31,9 @@ public unsafe sealed class StreamWriter : IDisposable
         nint formatContext;
         fixed (StreamParameters* parameters = _streamParameters)
             formatContext = LibUtil.stream_writer_add_client(outputUrl, parameters, _streamParameters.Length);
+        byte[] ip = new byte[4];
 
-        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, /*IP = ipAddress.ToString(),*/ Port = port });
+        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, /*IP = ipAddress.GetAddressBytes().,*/ Port = port });
 
         return true;
     }
@@ -84,12 +84,6 @@ public unsafe sealed class StreamWriter : IDisposable
         int ret;
         fixed (StreamClient* ptr = _streamClientsList.ToArray())
             ret = LibUtil.stream_writer_write_packet(packet, packetTimebase, ptr, formatContexts.Length);
-        //int ret = FFmpegImport.StreamWriter_WriteFrame(
-        //    packet,
-        //    packetTimebase,
-        //    _streamParameters[streamIndex].Timebase,
-        //    formatContexts,
-        //    formatContexts.Length);
 
         return ret;
     }
@@ -102,8 +96,8 @@ public unsafe sealed class StreamWriter : IDisposable
     [StructLayout(LayoutKind.Sequential)]
     public struct StreamClient
     {
-        //public String? IP;
-        public int Port;
+        public fixed byte IP[4];
+        public UInt16 Port;
         public nint FormatContext;
         public bool IsFile;
     }

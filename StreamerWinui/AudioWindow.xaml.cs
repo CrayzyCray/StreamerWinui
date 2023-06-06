@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using StreamerWinui.UserControls;
 using System;
 using System.IO;
+using System.Net;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT;
