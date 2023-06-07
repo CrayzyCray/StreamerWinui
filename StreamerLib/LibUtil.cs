@@ -8,6 +8,11 @@ unsafe public sealed partial class LibUtil
     const string LibPath = "DLLs/libutil.dll";
 
     [LibraryImport(LibPath)]
+    public static partial nint start_record_test();
+    [LibraryImport(LibPath)]
+    public static partial void stop_record_test(nint ptr);
+
+    [LibraryImport(LibPath)]
     internal static partial float get_peak(void* array, int length);
     [LibraryImport(LibPath)]
     internal static partial float get_peak_multichannel(void* array, int length, int channels, int channel_index);

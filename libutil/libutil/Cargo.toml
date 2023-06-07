@@ -12,3 +12,4 @@ crate-type = ["dylib"]
 
 [dependencies]
 ffmpeg = { path = "../ffmpeg" }
+wasapi = "0.12.0"

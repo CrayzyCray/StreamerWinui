@@ -1,11 +1,11 @@
 use core::panic;
 
-use crate::stream_writer;
+use crate::stream_writer::StreamWriter;
 use ffmpeg::*;
 
 pub struct AudioEncoder{
     stream_index: i32,
-    stream_writer: stream_writer::StreamWriter,
+    stream_writer: StreamWriter,
     packet_time_stamp: i64,
     codec_context: *mut AVCodecContext,
     packet: *mut AVPacket,
@@ -14,7 +14,7 @@ pub struct AudioEncoder{
 }
 
 impl AudioEncoder{
-    pub fn new(audio_codec: AudioCodecs, stream_writer: stream_writer::StreamWriter, channels: i32, required_sample_rate: i32) -> Self{
+    pub fn new(audio_codec: AudioCodecs, stream_writer: StreamWriter, channels: i32, required_sample_rate: i32) -> Self{
         let codec_id = match audio_codec {
             AudioCodecs::libopus => {
                 if required_sample_rate != 48000 {panic!()}
@@ -64,7 +64,7 @@ impl AudioEncoder{
         return ret;
     }
 
-    pub fn register_avstream(&mut self, stream_writer: stream_writer::StreamWriter){
+    pub fn register_avstream(&mut self, stream_writer: StreamWriter){
         self.stream_writer = stream_writer;
         self.stream_index = self.stream_writer.add_av_stream(self.codec_parameters)
     }

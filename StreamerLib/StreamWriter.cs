@@ -33,7 +33,7 @@ public unsafe sealed class StreamWriter : IDisposable
             formatContext = LibUtil.stream_writer_add_client(outputUrl, parameters, _streamParameters.Length);
         byte[] ip = new byte[4];
 
-        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, /*IP = ipAddress.GetAddressBytes().,*/ Port = port });
+        _streamClientsList.Add(new StreamClient() { FormatContext = formatContext, /*IP = ipAddress.GetAddressBytes().,*/ Port = (ushort)port });
 
         return true;
     }

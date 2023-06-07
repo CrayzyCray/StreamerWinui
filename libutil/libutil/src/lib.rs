@@ -1,9 +1,11 @@
 extern crate ffmpeg;
 use std::slice;
+use std::pin::Pin;
 mod stream_writer;
 mod audio_encoder;
-
-use ffmpeg::*;
+mod stream_controller;
+mod master_channel;
+mod audio_capturing_channel;
 
 #[no_mangle]
 pub unsafe extern fn get_peak(array:*mut f32, length:i32) -> f32 {
@@ -65,17 +67,16 @@ pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer
     }
 }
 
-#[repr(C)]
-pub struct EncoderParameters{
-    sample_rate: i32,
-    channels: i32,
-    frame_size_in_samples: i32,
-    frame_size_in_bytes: i32,
-    codec_context: *mut AVCodecContext,
-    packet: *mut AVPacket,
-    time_base: *mut AVRational,
-    codec_parameters: *mut AVCodecParameters,
-    frame: *mut AVFrame,
+#[no_mangle]
+pub extern fn start_record_test() -> Pin<Box<stream_controller::StreamController>> {
+    let mut stream_controller = stream_controller::StreamController::new();
+    stream_controller.start_streaming();
+    return Pin::new(Box::new(stream_controller));
+}
+
+#[no_mangle]
+pub extern fn stop_record_test(mut stream_controller: Pin<Box<stream_controller::StreamController>>) {
+    stream_controller.stop_streaming();
 }
 
 #[test]
