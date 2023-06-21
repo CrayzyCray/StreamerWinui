@@ -11,5 +11,6 @@ path = "src/lib.rs"
 crate-type = ["dylib"]
 
 [dependencies]
+cpal = "0.15.2"
 ffmpeg = { path = "../ffmpeg" }
-wasapi = "0.12.0"
+#wasapi = "0.12.0"

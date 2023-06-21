@@ -11,6 +11,8 @@ unsafe public sealed partial class LibUtil
     public static partial nint start_record_test();
     [LibraryImport(LibPath)]
     public static partial void stop_record_test(nint ptr);
+    [LibraryImport(LibPath)]
+    public static partial void start_chn_test();
 
     [LibraryImport(LibPath)]
     internal static partial float get_peak(void* array, int length);

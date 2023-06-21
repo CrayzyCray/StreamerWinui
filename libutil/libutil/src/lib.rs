@@ -1,11 +1,17 @@
 extern crate ffmpeg;
+use std::io::{Write, Bytes};
+use std::ptr::null;
 use std::slice;
 use std::pin::Pin;
+use std::time::Duration;
 mod stream_writer;
 mod audio_encoder;
 mod stream_controller;
 mod master_channel;
 mod audio_capturing_channel;
+
+use master_channel::MasterChannel;
+use audio_capturing_channel::AudioCapturingChannel;
 
 #[no_mangle]
 pub unsafe extern fn get_peak(array:*mut f32, length:i32) -> f32 {
@@ -27,7 +33,7 @@ pub extern fn get_peak_multichannel(array_ptr:*const f32, length:i32, channels: 
     let mut peak: f32 = 0.0;
     let array = unsafe{slice::from_raw_parts(array_ptr, length as usize)};
     
-    let mut i: usize = channel_index as usize;
+    let mut i = channel_index as usize;
     while i < length as usize {
         let mut sample = array[i];
         if sample < 0.0 {sample = -sample}
@@ -67,17 +73,72 @@ pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer
     }
 }
 
+// #[no_mangle]
+// pub extern fn start_record_test() -> Pin<Box<stream_controller::StreamController>> {
+//     let mut stream_controller = stream_controller::StreamController::new();
+//     stream_controller.start_streaming();
+//     return Pin::new(Box::new(stream_controller));
+// }
+
 #[no_mangle]
-pub extern fn start_record_test() -> Pin<Box<stream_controller::StreamController>> {
-    let mut stream_controller = stream_controller::StreamController::new();
-    stream_controller.start_streaming();
-    return Pin::new(Box::new(stream_controller));
+#[test]
+pub extern fn start_master_channel_test(){
+    let is_loopback = true;
+    let mut master_channel = MasterChannel::new();
+    let device = MasterChannel::get_default_device(is_loopback).unwrap();
+    master_channel.add_device(device, is_loopback);
+    //println!("{:?}", mas);
+    master_channel.start_streaming();
+
+    std::thread::sleep(Duration::from_secs(5));
+
+    master_channel.stop();
 }
 
 #[no_mangle]
-pub extern fn stop_record_test(mut stream_controller: Pin<Box<stream_controller::StreamController>>) {
-    stream_controller.stop_streaming();
+#[test]
+pub extern fn start_acc_test(){
+    let is_loopback = true;
+    let device = MasterChannel::get_default_device(is_loopback).unwrap();
+    let mut acc = AudioCapturingChannel::new(device, true, 4);
+    println!("{:?}", acc.device_name());
+
+    let path = std::path::Path::new("C:\\Users\\Cray\\Desktop\\St\\rec.raw");
+    let mut file = std::fs::File::create(path).unwrap();
+
+    match acc.start() {
+        Ok(_) => (),
+        Err(e) => panic!("{}", e),
+    }
+    let t = std::time::SystemTime::now();
+    let mut counter = 0;
+    loop {
+        let buf = match acc.read_next_buffer() {
+            Ok(data) => data,
+            Err(_) => {
+                println!("read_next_buffer error"); 
+                break;},
+        };
+        write_to_file(buf, &mut file);
+        counter += 1;
+        //if counter > (48000 / 960) * 2 {break;}
+        if t.elapsed().unwrap() >= Duration::from_secs(4){
+            break;}
+    }
+    acc.stop().unwrap();
+    fn write_to_file(buf: Vec<f32>, file: &mut std::fs::File){
+        let buffer;
+        unsafe{
+            buffer = std::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 4)
+        }
+        file.write(buffer);
+    }
 }
+
+// #[no_mangle]
+// pub extern fn stop_record_test(mut stream_controller: Pin<Box<stream_controller::StreamController>>) {
+//     stream_controller.stop_streaming();
+// }
 
 #[test]
 fn audio_encoder_test(){

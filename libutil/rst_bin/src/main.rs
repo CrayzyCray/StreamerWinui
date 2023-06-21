@@ -1,13 +1,22 @@
 extern crate ffmpeg;
-use std::ffi::CStr;
+//use std::ffi::CStr;
+use std::{*, time::Duration, sync::mpsc};
 
-use ffmpeg::*;
+struct dr{
+    i: i32,
+}
+impl Drop for dr{
+    fn drop(&mut self) {
+        println!("dropped");
+    }
+}
+
+struct st<'a>{
+    var: Vec<&'a dr>,
+}
 
 fn main() {
-    unsafe{
-        let codec = avcodec_find_encoder(AVCodecID_AV_CODEC_ID_OPUS);
-        let s = std::ffi::CStr::from_ptr((*codec).wrapper_name);
-        println!("{:?}", s);
-    }
-    println!("Hello, world!");
+    let mut a = st {var: vec![&dr {i: 1}, &dr {i: 2}]};
+    a.var.remove(0);
+    println!("HW");
 }
