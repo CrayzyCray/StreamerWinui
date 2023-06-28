@@ -1,22 +1,23 @@
-use std::collections::btree_map::Iter;
-
 use crate::stream_writer::*;
 use crate::audio_capturing_channel::*;
+use std::*;
+use std::sync::Arc;
+use cpal::BufferSize;
 use cpal::{Device, Devices, OutputDevices, DevicesError, traits::{DeviceTrait, HostTrait, StreamTrait}};
 
 pub struct MasterChannel{
-    stream_writer: StreamWriter,
+    stream_writer: Arc<StreamWriter>,
     state: MasterChanelStates,
-    audio_channels: Vec<AudioCapturingChannel>,
+    audio_channels: Arc<Vec<AudioCapturingChannel>>,
     master_buffer: Vec<f32>,
 }
 
 impl MasterChannel{
     pub fn new() -> Self{
         Self{
-            stream_writer: StreamWriter::new(),
+            stream_writer: Arc::new(StreamWriter::new()),
             state: MasterChanelStates::Stopped,
-            audio_channels: Vec::new(),
+            audio_channels: Arc::new(vec![]),
             master_buffer: Vec::new(),
         }
     }
@@ -53,7 +54,7 @@ impl MasterChannel{
             MasterChanelStates::Streaming => return Err(()),
             _ => {
                 let channel = AudioCapturingChannel::new(device, is_loopback, 4);
-                self.audio_channels.push(channel);
+                Arc::get_mut(&mut self.audio_channels).unwrap().push(channel);
                 return Ok(());
             }
         }
@@ -63,7 +64,8 @@ impl MasterChannel{
     pub fn start_streaming(&mut self) -> Result<(), ()>{
         match self.state {
             MasterChanelStates::Stopped => {
-                for channel in self.audio_channels.iter_mut() {
+                let channels = Arc::get_mut(&mut self.audio_channels).unwrap();
+                for channel in channels.iter_mut() {
                     channel.start();}
                 Ok(())
             },
@@ -72,7 +74,8 @@ impl MasterChannel{
     }
 
     pub fn stop(&mut self){
-        for channel in self.audio_channels.iter_mut() {
+        let channels = Arc::get_mut(&mut self.audio_channels).unwrap();
+        for channel in channels.iter_mut() {
             channel.stop();
         }
     }
@@ -91,6 +94,16 @@ pub enum MasterChanelStates{
     Streaming,
 }
 
-fn mixer_loop(){
-    
+fn mixer_loop(audio_channels: &Arc<Vec<AudioCapturingChannel>>, stream_writer: &Arc<StreamWriter>, frame_size: usize){
+    let mut master_buffer: Vec<f32>;
+    let mut stop_flag;
+
+    loop {
+        for channel in audio_channels.iter() {
+            let buffer = channel.read_next_frame();
+            if buffer.is_err() {stop_flag = true}
+            let buffer = buffer.unwrap();
+            
+        }
+    }
 }

@@ -1,12 +1,15 @@
-use std::{collections::VecDeque, thread::{self, JoinHandle}, error, sync::Mutex, rc::Rc, sync::{Arc, mpsc::RecvError}, sync::mpsc};
+use std::{error, sync::Mutex, rc::Rc, sync::{Arc, mpsc::RecvError, mpsc::Receiver, mpsc::SyncSender, mpsc}, time::Instant};
 use cpal::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use std::*;
+use crate::audio_frame::*;
 
-//type Res<T> = Result<T, Box<dyn error::Error>>;
-type SampleType = f32;
+
+
+
 pub struct AudioCapturingChannel{
-    receiver: mpsc::Receiver<Vec<SampleType>>,
-    sync_sender: Arc<mpsc::SyncSender<Vec<SampleType>>>,
+    receiver: Receiver<Arc<AudioFrame>>,
+    sync_sender: Arc<SyncSender<Arc<AudioFrame>>>,
     device: Device,
     is_loopback: bool,
     stream: Option<Stream>,
@@ -67,7 +70,7 @@ impl AudioCapturingChannel{
         return Ok(());
     }
 
-    pub fn read_next_buffer(&mut self) -> Result<Vec<SampleType>, ()>{
+    pub fn read_next_frame(&self) -> Result<Arc<AudioFrame>, ()>{
         if !self.is_capturing {
             return Err(())}
         
@@ -90,10 +93,12 @@ impl AudioCapturingChannel{
     }
 }
 
-fn data_callback<'a>(data: &'a [SampleType], _: &cpal::InputCallbackInfo, sender: &Arc<mpsc::SyncSender<Vec<SampleType>>>) {
+fn data_callback(data: &[SampleType], _: &cpal::InputCallbackInfo, sender: &Arc<mpsc::SyncSender<Arc<AudioFrame>>>) {
     println!("data_callback. size: {}", data.len());
+    let time_captured = time::Instant::now();
     let data = Vec::from(data);
-    match sender.send(data) {
+    let audio_frame = Arc::from(AudioFrame::new(data, time_captured));
+    match sender.send(audio_frame) {
         Ok(_) => (),
         Err(e) => panic!("{}", e.to_string()),
     }

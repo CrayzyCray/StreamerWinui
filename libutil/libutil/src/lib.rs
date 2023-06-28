@@ -9,6 +9,7 @@ mod audio_encoder;
 mod stream_controller;
 mod master_channel;
 mod audio_capturing_channel;
+mod audio_frame;
 
 use master_channel::MasterChannel;
 use audio_capturing_channel::AudioCapturingChannel;
@@ -113,20 +114,20 @@ pub extern fn start_acc_test(){
     let t = std::time::SystemTime::now();
     let mut counter = 0;
     loop {
-        let buf = match acc.read_next_buffer() {
+        let audio_frame = match acc.read_next_frame() {
             Ok(data) => data,
             Err(_) => {
                 println!("read_next_buffer error"); 
                 break;},
         };
-        write_to_file(buf, &mut file);
+        write_to_file(audio_frame.data(), &mut file);
         counter += 1;
         //if counter > (48000 / 960) * 2 {break;}
         if t.elapsed().unwrap() >= Duration::from_secs(4){
             break;}
     }
     acc.stop().unwrap();
-    fn write_to_file(buf: Vec<f32>, file: &mut std::fs::File){
+    fn write_to_file(buf: &Vec<f32>, file: &mut std::fs::File){
         let buffer;
         unsafe{
             buffer = std::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 4)
