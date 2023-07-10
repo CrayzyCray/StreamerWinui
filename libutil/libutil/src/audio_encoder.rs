@@ -1,5 +1,5 @@
+#![allow(dead_code)]
 use core::panic;
-
 use crate::stream_writer::StreamWriter;
 use ffmpeg::*;
 

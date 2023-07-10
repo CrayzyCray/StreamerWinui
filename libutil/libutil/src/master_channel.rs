@@ -1,89 +1,114 @@
+#![allow(dead_code)]
 use crate::stream_writer::*;
 use crate::audio_capturing_channel::*;
 use std::*;
 use std::sync::Arc;
-use cpal::BufferSize;
-use cpal::{Device, Devices, OutputDevices, DevicesError, traits::{DeviceTrait, HostTrait, StreamTrait}};
+use std::sync::Mutex;
+use windows::Win32::Media::Audio::*;
 
 pub struct MasterChannel{
     stream_writer: Arc<StreamWriter>,
     state: MasterChanelStates,
-    audio_channels: Arc<Vec<AudioCapturingChannel>>,
+    audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>,
     master_buffer: Vec<f32>,
 }
 
 impl MasterChannel{
     pub fn new() -> Self{
+        unsafe{
+            use windows::Win32::System::Com::*;
+            CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
+        }
         Self{
             stream_writer: Arc::new(StreamWriter::new()),
             state: MasterChanelStates::Stopped,
-            audio_channels: Arc::new(vec![]),
+            audio_channels: Arc::new(Mutex::new(vec![])),
             master_buffer: Vec::new(),
         }
     }
-    pub fn available_devices(&self, is_loopback: bool) -> Result<Vec<Device>, ()>{
-        ///todo
-        let all_devices = match is_loopback {
-            true => cpal::default_host().output_devices(),
-            false => cpal::default_host().input_devices(),
-        };
 
-        if all_devices.is_err() {return Err(())}
-        let mut available_devices: Vec<Device> = Vec::new();
-        
-        for device in all_devices.unwrap() {
-            let mut is_used = false;
-            let device_name = device.name().unwrap();
-            for channel in self.audio_channels.iter() {
-                if device_name == channel.device().name().unwrap() {
-                    is_used = true;
-                    break;
-                }
-            }
+    pub fn available_devices(&self, direction: EDataFlow) -> Result<Vec<IMMDevice>, ()>{
+        use windows::Win32::System::Com::*;
+        unsafe{
+            let enumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL);
+            if enumerator.is_err() {return Err(());}
+            let enumerator: IMMDeviceEnumerator = enumerator.unwrap();
 
-            if is_used {
-                available_devices.push(device);
+            let collection = enumerator.EnumAudioEndpoints(direction, DEVICE_STATE_ACTIVE);
+            if collection.is_err() {return Err(());}
+            let collection = collection.unwrap();
+
+            let count = collection.GetCount().unwrap();
+            let mut devices = Vec::with_capacity(count as usize);
+            for i in 0..count{
+                devices.push(collection.Item(i).unwrap());
             }
+            return Ok(devices);
         }
 
-        return Ok(available_devices);
     }
     
-    pub fn add_device(&mut self, device: Device, is_loopback: bool) -> Result<(), ()>{
+    pub fn add_device(&mut self, device: IMMDevice, direction: EDataFlow) -> Result<(), ()>{
         match self.state {
             MasterChanelStates::Streaming => return Err(()),
             _ => {
-                let channel = AudioCapturingChannel::new(device, is_loopback, 4);
-                Arc::get_mut(&mut self.audio_channels).unwrap().push(channel);
+                let audio_channels = self.audio_channels.lock();
+                if audio_channels.is_err(){
+                    return Err(());
+                }
+                let mut channel = AudioCapturingChannel::new(device, direction);
+                channel.start().unwrap();
+                audio_channels.unwrap().push(channel);
                 return Ok(());
             }
         }
         
     }
 
-    pub fn start_streaming(&mut self) -> Result<(), ()>{
+    pub fn start(&mut self) -> Result<(), ()>{
         match self.state {
-            MasterChanelStates::Stopped => {
-                let channels = Arc::get_mut(&mut self.audio_channels).unwrap();
-                for channel in channels.iter_mut() {
-                    channel.start();}
-                Ok(())
-            },
-            _ => Err(())
+            MasterChanelStates::Stopped => return start(self),
+            _ => return Err(()),
+        };
+        fn start(s: &mut MasterChannel) -> Result<(), ()>{
+            let channels = s.audio_channels.lock();
+            if channels.is_err() {
+                return Err(());
+            }
+            for channel in channels.unwrap().iter_mut() {
+                channel.start().unwrap();}
+            Ok(())
         }
     }
 
-    pub fn stop(&mut self){
-        let channels = Arc::get_mut(&mut self.audio_channels).unwrap();
-        for channel in channels.iter_mut() {
-            channel.stop();
+    pub fn stop(&mut self) -> Result<(), ()>{
+        match self.state {
+            MasterChanelStates::Streaming => return start(self),
+            _ => return Err(()),
+        };
+        fn start(s: &mut MasterChannel) -> Result<(), ()>{
+            let channels = s.audio_channels.lock();
+            if channels.is_err() {
+                return Err(());
+            }
+            for channel in channels.unwrap().iter_mut() {
+                channel.stop().unwrap();
+            }
+            Ok(())
         }
     }
 
-    pub fn get_default_device(is_loopback: bool) -> Option<Device>{
-        match is_loopback {
-            true => cpal::default_host().default_output_device(),
-            false => cpal::default_host().default_input_device(),
+    pub fn get_default_device(&self, dataflow: EDataFlow, role: ERole) -> Result<IMMDevice, ()>{
+        use windows::Win32::System::Com::*;
+        unsafe{
+            let enumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL);
+            if enumerator.is_err() {return Err(());}
+            let enumerator: IMMDeviceEnumerator = enumerator.unwrap();
+
+            let device = enumerator.GetDefaultAudioEndpoint(dataflow, role);
+            if device.is_err() {return Err(());}
+            let device = device.unwrap();
+            return Ok(device);
         }
     }
 }
@@ -94,15 +119,30 @@ pub enum MasterChanelStates{
     Streaming,
 }
 
-fn mixer_loop(audio_channels: &Arc<Vec<AudioCapturingChannel>>, stream_writer: &Arc<StreamWriter>, frame_size: usize){
+fn mixer_loop(audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>, stream_writer: &Arc<StreamWriter>, frame_size: usize){
     let mut master_buffer: Vec<f32>;
-    let mut stop_flag;
+    let mut stop_flag = false;
+    todo!();
 
     loop {
+        let audio_channels = audio_channels.lock();
+
+        if audio_channels.is_err(){
+            continue;
+        }
+
+        let audio_channels = audio_channels.unwrap();
+
         for channel in audio_channels.iter() {
-            let buffer = channel.read_next_frame();
-            if buffer.is_err() {stop_flag = true}
-            let buffer = buffer.unwrap();
+            if !channel.is_capturing() {
+                continue;
+            }
+
+            let buffer = channel.read();
+            // if buffer.is_err() {
+            //     continue;
+            // }
+            // let buffer = buffer.unwrap();
             
         }
     }

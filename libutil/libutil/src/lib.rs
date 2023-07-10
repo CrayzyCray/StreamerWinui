@@ -1,18 +1,21 @@
+#![allow(dead_code)]
 extern crate ffmpeg;
-use std::io::{Write, Bytes};
 use std::ptr::null;
 use std::slice;
 use std::pin::Pin;
-use std::time::Duration;
+use std::thread;
+use std::time::{Duration, Instant};
 mod stream_writer;
 mod audio_encoder;
 mod stream_controller;
 mod master_channel;
 mod audio_capturing_channel;
 mod audio_frame;
+mod recorder;
 
 use master_channel::MasterChannel;
 use audio_capturing_channel::AudioCapturingChannel;
+use windows::Win32::Media::Audio::{eRender, eMultimedia, eCommunications};
 
 #[no_mangle]
 pub unsafe extern fn get_peak(array:*mut f32, length:i32) -> f32 {
@@ -80,61 +83,93 @@ pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer
 //     stream_controller.start_streaming();
 //     return Pin::new(Box::new(stream_controller));
 // }
-
-#[no_mangle]
 #[test]
-pub extern fn start_master_channel_test(){
-    let is_loopback = true;
-    let mut master_channel = MasterChannel::new();
-    let device = MasterChannel::get_default_device(is_loopback).unwrap();
-    master_channel.add_device(device, is_loopback);
-    //println!("{:?}", mas);
-    master_channel.start_streaming();
-
-    std::thread::sleep(Duration::from_secs(5));
-
-    master_channel.stop();
-}
-
-#[no_mangle]
-#[test]
-pub extern fn start_acc_test(){
-    let is_loopback = true;
-    let device = MasterChannel::get_default_device(is_loopback).unwrap();
-    let mut acc = AudioCapturingChannel::new(device, true, 4);
-    println!("{:?}", acc.device_name());
-
-    let path = std::path::Path::new("C:\\Users\\Cray\\Desktop\\St\\rec.raw");
-    let mut file = std::fs::File::create(path).unwrap();
-
-    match acc.start() {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e),
+fn audio_capturing_channel_test() {
+    let master_channel = MasterChannel::new();
+    let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
+    let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
+    let mut channels = vec![];
+    channels.push(AudioCapturingChannel::new(dev1, eRender));
+    channels.push(AudioCapturingChannel::new(dev2, eRender));
+    let buffer_duration = Duration::from_nanos(channels[0].buffer_duration() as u64);
+    for ele in channels.iter_mut() {
+        ele.start().unwrap();
     }
-    let t = std::time::SystemTime::now();
-    let mut counter = 0;
+    
+    let start_time = Instant::now();
     loop {
-        let audio_frame = match acc.read_next_frame() {
-            Ok(data) => data,
-            Err(_) => {
-                println!("read_next_buffer error"); 
-                break;},
-        };
-        write_to_file(audio_frame.data(), &mut file);
-        counter += 1;
-        //if counter > (48000 / 960) * 2 {break;}
-        if t.elapsed().unwrap() >= Duration::from_secs(4){
-            break;}
-    }
-    acc.stop().unwrap();
-    fn write_to_file(buf: &Vec<f32>, file: &mut std::fs::File){
-        let buffer;
-        unsafe{
-            buffer = std::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 4)
+        std::thread::sleep(buffer_duration / 2);
+        if start_time.elapsed() > Duration::from_secs(6) {
+            break;
         }
-        file.write(buffer);
+        for chn in channels.iter_mut() {
+            loop {
+                match chn.read() {
+                    Some(audio_frame) => {
+                        println!("{} bytes: {}", chn.device_name(), audio_frame.0.len());
+                    },
+                    None => break,
+                }
+            }
+        }
+    }
+
+    for ele in channels.iter_mut() {
+        ele.stop().unwrap();
     }
 }
+
+#[test]
+fn audio_capturing_channel_test2() {
+    let mut master_channel = MasterChannel::new();
+    let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
+    let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
+    master_channel.add_device(dev1, eRender).unwrap();
+    //master_channel.add_device(dev2, eRender);
+    master_channel.start().unwrap();
+    thread::sleep(Duration::from_secs(6));
+    master_channel.stop().unwrap();
+}
+
+// #[no_mangle]
+// #[test]
+// pub extern fn start_acc_test() {
+//     let is_loopback = true;
+//     let device = MasterChannel::get_default_device(is_loopback).unwrap();
+//     let mut acc = AudioCapturingChannel::new(device, true, 4);
+//     println!("{:?}", acc.device_name());
+
+//     let path = std::path::Path::new("C:\\Users\\Cray\\Desktop\\St\\rec.raw");
+//     let mut file = std::fs::File::create(path).unwrap();
+
+//     match acc.start() {
+//         Ok(_) => (),
+//         Err(e) => panic!("{}", e),
+//     }
+//     let t = std::time::SystemTime::now();
+//     let mut counter = 0;
+//     loop {
+//         let audio_frame = match acc.read_next_frame() {
+//             Ok(data) => data,
+//             Err(_) => {
+//                 println!("read_next_buffer error"); 
+//                 break;},
+//         };
+//         write_to_file(audio_frame.data(), &mut file);
+//         counter += 1;
+//         //if counter > (48000 / 960) * 2 {break;}
+//         if t.elapsed().unwrap() >= Duration::from_secs(4){
+//             break;}
+//     }
+//     acc.stop().unwrap();
+//     fn write_to_file(buf: &Vec<f32>, file: &mut std::fs::File){
+//         let buffer;
+//         unsafe{
+//             buffer = std::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 4)
+//         }
+//         file.write(buffer);
+//     }
+// }
 
 // #[no_mangle]
 // pub extern fn stop_record_test(mut stream_controller: Pin<Box<stream_controller::StreamController>>) {
