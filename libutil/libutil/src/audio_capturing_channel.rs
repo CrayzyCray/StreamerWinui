@@ -29,6 +29,7 @@ impl AudioCapturingChannel{
         let buffer_duration: i64;
         let capture_client: IAudioCaptureClient;
         let name;
+        
         unsafe{
             use windows::Win32::System::Com::*;
             use windows::Win32::UI::Shell::PropertiesSystem::*;
@@ -63,14 +64,23 @@ impl AudioCapturingChannel{
             buffer_duration,
         }
     }
+
     pub fn have_unreaded_frames(&self) -> bool {
         unsafe{
             self.capture_client.GetNextPacketSize().unwrap() > 0
         }
     }
+
     pub fn buffer_duration(&self) -> i64 {
         self.buffer_duration
     }
+
+    pub fn stream_latency(&self) -> i64 {
+        unsafe{
+            self.audio_client.GetStreamLatency().unwrap()
+        }
+    }
+
     pub fn start(&mut self) -> Result<(), ()>{
         if self.is_capturing {
             return Err(());
@@ -120,7 +130,7 @@ impl AudioCapturingChannel{
             buffer = Vec::from(slice::from_raw_parts(p_buf, buffer_size as usize));
             self.capture_client.ReleaseBuffer(frames_stored).unwrap();
         }
-        return Some(Arc::new(AudioFrame(buffer, qpc_position)))
+        return Some(Arc::new(AudioFrame{data: buffer, time: QPCTime(qpc_position)}))
     }
 
     pub fn device(&self) -> &IMMDevice{

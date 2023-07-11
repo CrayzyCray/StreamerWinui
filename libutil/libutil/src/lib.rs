@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 extern crate ffmpeg;
-use std::ptr::null;
-use std::slice;
-use std::pin::Pin;
-use std::thread;
-use std::time::{Duration, Instant};
+use std::*;
+use slice;
+use pin::Pin;
+use time::{Duration, Instant};
 mod stream_writer;
 mod audio_encoder;
 mod stream_controller;
@@ -87,13 +86,14 @@ pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer
 fn audio_capturing_channel_test() {
     let master_channel = MasterChannel::new();
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
-    let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
+    //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     let mut channels = vec![];
     channels.push(AudioCapturingChannel::new(dev1, eRender));
-    channels.push(AudioCapturingChannel::new(dev2, eRender));
+    //channels.push(AudioCapturingChannel::new(dev2, eRender));
     let buffer_duration = Duration::from_nanos(channels[0].buffer_duration() as u64);
     for ele in channels.iter_mut() {
         ele.start().unwrap();
+        println!("{} latancy: {}", ele.device_name(), Duration::from_nanos(ele.stream_latency() as u64 * 100).as_secs_f32());
     }
     
     let start_time = Instant::now();
@@ -106,7 +106,7 @@ fn audio_capturing_channel_test() {
             loop {
                 match chn.read() {
                     Some(audio_frame) => {
-                        println!("{} bytes: {}", chn.device_name(), audio_frame.0.len());
+                        println!("bytes: {}, time: {}, st: {}", audio_frame.data.len(), audio_frame.time.as_secs_f32(), start_time.elapsed().as_secs_f32());
                     },
                     None => break,
                 }
@@ -117,6 +117,18 @@ fn audio_capturing_channel_test() {
     for ele in channels.iter_mut() {
         ele.stop().unwrap();
     }
+}
+
+#[test]
+fn performance_time() {
+    let start_time = Instant::now();
+    let mut time_qpc = 0;
+    let mut time_instant: Duration;
+    for i in 0..10_000_000 {
+        //unsafe{windows::Win32::System::Performance::QueryPerformanceCounter(&mut time_qpc);}
+        time_instant = start_time.elapsed();
+    }
+    println!("{}", start_time.elapsed().as_secs_f32());
 }
 
 #[test]
