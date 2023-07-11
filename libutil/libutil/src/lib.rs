@@ -1,9 +1,11 @@
 #![allow(dead_code)]
+#![allow(unused_imports)]
 extern crate ffmpeg;
 use std::*;
 use slice;
 use pin::Pin;
 use time::{Duration, Instant};
+mod qpc_time;
 mod stream_writer;
 mod audio_encoder;
 mod stream_controller;
@@ -15,6 +17,13 @@ mod recorder;
 use master_channel::MasterChannel;
 use audio_capturing_channel::AudioCapturingChannel;
 use windows::Win32::Media::Audio::{eRender, eMultimedia, eCommunications};
+
+use qpc_time::*;
+use audio_frame::*;
+use stream_writer::*;
+use audio_encoder::*;
+use master_channel::*;
+use audio_capturing_channel::*;
 
 #[no_mangle]
 pub unsafe extern fn get_peak(array:*mut f32, length:i32) -> f32 {
@@ -55,15 +64,15 @@ pub extern fn apply_volume(array_ptr:*mut f32, length:i32, volume: f32) {
     }
 }
 
-#[no_mangle]
-pub extern fn stream_writer_add_client(stream_writer: *mut stream_writer::StreamWriter, ip: [u8; 4], port: u16) {
-    if stream_writer.is_null() {
-        return;
-    }
-    unsafe{
-        (*stream_writer).add_client(std::net::Ipv4Addr::from(ip), port);
-    }
-}
+// #[no_mangle]
+// pub extern fn stream_writer_add_client(stream_writer: *mut stream_writer::StreamWriter, ip: [u8; 4], port: u16) {
+//     if stream_writer.is_null() {
+//         return;
+//     }
+//     unsafe{
+//         (*stream_writer).add_client(std::net::Ipv4Addr::from(ip), port);
+//     }
+// }
 
 #[no_mangle]
 pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer::StreamWriter, path_ptr: *const i8) {
@@ -120,22 +129,10 @@ fn audio_capturing_channel_test() {
 }
 
 #[test]
-fn performance_time() {
-    let start_time = Instant::now();
-    let mut time_qpc = 0;
-    let mut time_instant: Duration;
-    for i in 0..10_000_000 {
-        //unsafe{windows::Win32::System::Performance::QueryPerformanceCounter(&mut time_qpc);}
-        time_instant = start_time.elapsed();
-    }
-    println!("{}", start_time.elapsed().as_secs_f32());
-}
-
-#[test]
 fn audio_capturing_channel_test2() {
     let mut master_channel = MasterChannel::new();
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
-    let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
+    //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     master_channel.add_device(dev1, eRender).unwrap();
     //master_channel.add_device(dev2, eRender);
     master_channel.start().unwrap();
@@ -190,10 +187,10 @@ fn audio_capturing_channel_test2() {
 
 #[test]
 fn audio_encoder_test(){
-    let audio_codec = audio_encoder::AudioCodecs::libopus;
-    let stream_writer = stream_writer::StreamWriter::new();
+    let audio_codec = AudioCodecs::LibOpus;
+    let stream_writer = StreamWriter::new();
     let channels = 2;
     let required_sample_rate = 48000;
-    let encoder = audio_encoder::AudioEncoder::new(audio_codec, stream_writer, channels, required_sample_rate);
+    let encoder = AudioEncoder::new(audio_codec, stream_writer, channels, required_sample_rate);
     println!("frame_size_in_bytes: {:?}", encoder.frame_size_in_bytes());
 }

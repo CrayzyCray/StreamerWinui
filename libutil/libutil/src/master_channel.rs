@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use crate::audio_frame::AudioFrame;
+use crate::QPCTime;
 use crate::stream_writer::*;
 use crate::audio_capturing_channel::*;
 use std::*;
@@ -11,6 +13,7 @@ pub struct MasterChannel{
     state: MasterChanelStates,
     audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>,
     master_buffer: Vec<f32>,
+    last_frame_time: QPCTime,
 }
 
 impl MasterChannel{
@@ -24,6 +27,7 @@ impl MasterChannel{
             state: MasterChanelStates::Stopped,
             audio_channels: Arc::new(Mutex::new(vec![])),
             master_buffer: Vec::new(),
+            last_frame_time: QPCTime(0),
         }
     }
 
@@ -63,6 +67,14 @@ impl MasterChannel{
             }
         }
         
+    }
+
+    pub fn read(&self) -> Result<AudioFrame, ()> {
+        match self.state {
+            MasterChanelStates::Stopped => return Err(()),
+            _ => (),
+        };
+        todo!();
     }
 
     pub fn start(&mut self) -> Result<(), ()>{
@@ -119,31 +131,30 @@ pub enum MasterChanelStates{
     Streaming,
 }
 
-fn mixer_loop(audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>, stream_writer: &Arc<StreamWriter>, frame_size: usize){
-    let mut master_buffer: Vec<f32>;
-    let mut stop_flag = false;
-    todo!();
+// fn mixer_loop(audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>, stream_writer: &Arc<StreamWriter>, frame_size: usize){
+//     let mut master_buffer: Vec<f32>;
+//     let mut stop_flag = false;
 
-    loop {
-        let audio_channels = audio_channels.lock();
+//     loop {
+//         let audio_channels = audio_channels.lock();
 
-        if audio_channels.is_err(){
-            continue;
-        }
+//         if audio_channels.is_err(){
+//             continue;
+//         }
 
-        let audio_channels = audio_channels.unwrap();
+//         let audio_channels = audio_channels.unwrap();
 
-        for channel in audio_channels.iter() {
-            if !channel.is_capturing() {
-                continue;
-            }
+//         for channel in audio_channels.iter() {
+//             if !channel.is_capturing() {
+//                 continue;
+//             }
 
-            let buffer = channel.read();
-            // if buffer.is_err() {
-            //     continue;
-            // }
-            // let buffer = buffer.unwrap();
+//             let buffer = channel.read();
+//             // if buffer.is_err() {
+//             //     continue;
+//             // }
+//             // let buffer = buffer.unwrap();
             
-        }
-    }
-}
+//         }
+//     }
+// }

@@ -1,6 +1,5 @@
 #![allow(dead_code)]
-use core::panic;
-use crate::stream_writer::StreamWriter;
+use crate::StreamWriter;
 use ffmpeg::*;
 
 pub struct AudioEncoder{
@@ -16,10 +15,9 @@ pub struct AudioEncoder{
 impl AudioEncoder{
     pub fn new(audio_codec: AudioCodecs, stream_writer: StreamWriter, channels: i32, required_sample_rate: i32) -> Self{
         let codec_id = match audio_codec {
-            AudioCodecs::libopus => {
-                if required_sample_rate != 48000 {panic!()}
+            AudioCodecs::LibOpus => {
+                if required_sample_rate != 48000 {todo!()}
                 AVCodecID_AV_CODEC_ID_OPUS},
-            _ => panic!(),
         };
         
         unsafe{
@@ -106,5 +104,5 @@ impl Drop for AudioEncoder{
 }
 
 pub enum AudioCodecs{
-    libopus,
+    LibOpus,
 }

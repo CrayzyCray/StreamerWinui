@@ -4,6 +4,7 @@ use std::time::Duration;
 use std::*;
 use windows::{Win32::{Media::Audio::*, Devices::Properties::{DEVPKEY_Device_FriendlyName, DEVPROPKEY}}, core::PWSTR};
 use crate::audio_frame::*;
+use crate::QPCTime;
 
 pub struct AudioCapturingChannel{
     receiver: Receiver<Arc<AudioFrame>>,
@@ -107,7 +108,7 @@ impl AudioCapturingChannel{
         return Ok(());
     }
 
-    pub fn read(&self) -> Option<Arc<AudioFrame>>{
+    pub fn read(&self) -> Option<AudioFrame>{
         if !self.is_capturing {
             return None
         }
@@ -130,7 +131,7 @@ impl AudioCapturingChannel{
             buffer = Vec::from(slice::from_raw_parts(p_buf, buffer_size as usize));
             self.capture_client.ReleaseBuffer(frames_stored).unwrap();
         }
-        return Some(Arc::new(AudioFrame{data: buffer, time: QPCTime(qpc_position)}))
+        return Some(AudioFrame{data: buffer, time: QPCTime(qpc_position)})
     }
 
     pub fn device(&self) -> &IMMDevice{
