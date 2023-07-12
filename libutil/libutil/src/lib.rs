@@ -8,11 +8,12 @@ use time::{Duration, Instant};
 mod qpc_time;
 mod stream_writer;
 mod audio_encoder;
-mod stream_controller;
+//mod stream_controller;
 mod master_channel;
 mod audio_capturing_channel;
 mod audio_frame;
 mod recorder;
+mod wave_format;
 
 use master_channel::MasterChannel;
 use audio_capturing_channel::AudioCapturingChannel;
@@ -24,6 +25,7 @@ use stream_writer::*;
 use audio_encoder::*;
 use master_channel::*;
 use audio_capturing_channel::*;
+use wave_format::*;
 
 #[no_mangle]
 pub unsafe extern fn get_peak(array:*mut f32, length:i32) -> f32 {
@@ -93,7 +95,7 @@ pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer
 // }
 #[test]
 fn audio_capturing_channel_test() {
-    let master_channel = MasterChannel::new();
+    let master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32));
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
     //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     let mut channels = vec![];
@@ -130,7 +132,7 @@ fn audio_capturing_channel_test() {
 
 #[test]
 fn audio_capturing_channel_test2() {
-    let mut master_channel = MasterChannel::new();
+    let mut master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32));
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
     //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     master_channel.add_device(dev1, eRender).unwrap();

@@ -7,17 +7,20 @@ use std::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use windows::Win32::Media::Audio::*;
+use crate::WaveFormat;
 
 pub struct MasterChannel{
     stream_writer: Arc<StreamWriter>,
     state: MasterChanelStates,
-    audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>,
-    master_buffer: Vec<f32>,
+    audio_channels: Vec<AudioCapturingChannel>,
+    master_buffer: Vec<u8>,
     last_frame_time: QPCTime,
+    packet_size: u16,
+    wave_format: WaveFormat,
 }
 
 impl MasterChannel{
-    pub fn new() -> Self{
+    pub fn new(packet_size: u16, wave_format: WaveFormat) -> Self{
         unsafe{
             use windows::Win32::System::Com::*;
             CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
@@ -25,9 +28,11 @@ impl MasterChannel{
         Self{
             stream_writer: Arc::new(StreamWriter::new()),
             state: MasterChanelStates::Stopped,
-            audio_channels: Arc::new(Mutex::new(vec![])),
+            audio_channels: vec![],
             master_buffer: Vec::new(),
             last_frame_time: QPCTime(0),
+            packet_size,
+            wave_format,
         }
     }
 
@@ -56,14 +61,7 @@ impl MasterChannel{
         match self.state {
             MasterChanelStates::Streaming => return Err(()),
             _ => {
-                let audio_channels = self.audio_channels.lock();
-                if audio_channels.is_err(){
-                    return Err(());
-                }
-                let mut channel = AudioCapturingChannel::new(device, direction);
-                channel.start().unwrap();
-                audio_channels.unwrap().push(channel);
-                return Ok(());
+                todo!()
             }
         }
         
@@ -74,6 +72,8 @@ impl MasterChannel{
             MasterChanelStates::Stopped => return Err(()),
             _ => (),
         };
+
+        let buffer = vec![0u8; self.wave_format.bytes_per_frame() as usize];
         todo!();
     }
 
@@ -83,13 +83,7 @@ impl MasterChannel{
             _ => return Err(()),
         };
         fn start(s: &mut MasterChannel) -> Result<(), ()>{
-            let channels = s.audio_channels.lock();
-            if channels.is_err() {
-                return Err(());
-            }
-            for channel in channels.unwrap().iter_mut() {
-                channel.start().unwrap();}
-            Ok(())
+            todo!()
         }
     }
 
@@ -99,14 +93,7 @@ impl MasterChannel{
             _ => return Err(()),
         };
         fn start(s: &mut MasterChannel) -> Result<(), ()>{
-            let channels = s.audio_channels.lock();
-            if channels.is_err() {
-                return Err(());
-            }
-            for channel in channels.unwrap().iter_mut() {
-                channel.stop().unwrap();
-            }
-            Ok(())
+            todo!()
         }
     }
 
