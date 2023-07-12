@@ -11,7 +11,7 @@ use crate::WaveFormat;
 
 pub struct MasterChannel{
     stream_writer: Arc<StreamWriter>,
-    state: MasterChanelStates,
+    is_capturing: bool,
     audio_channels: Vec<AudioCapturingChannel>,
     master_buffer: Vec<u8>,
     last_frame_time: QPCTime,
@@ -27,7 +27,7 @@ impl MasterChannel{
         }
         Self{
             stream_writer: Arc::new(StreamWriter::new()),
-            state: MasterChanelStates::Stopped,
+            is_capturing: false,
             audio_channels: vec![],
             master_buffer: Vec::new(),
             last_frame_time: QPCTime(0),
@@ -57,44 +57,37 @@ impl MasterChannel{
 
     }
     
-    pub fn add_device(&mut self, device: IMMDevice, direction: EDataFlow) -> Result<(), ()>{
-        match self.state {
-            MasterChanelStates::Streaming => return Err(()),
-            _ => {
-                todo!()
-            }
-        }
-        
+    pub fn add_device(&mut self, device: IMMDevice, data_flow: EDataFlow) -> Result<(), ()>{
+        let mut channel = AudioCapturingChannel::new(device, data_flow);
+        if self.is_capturing { channel.start().unwrap() }
+        self.audio_channels.push(channel);
+        Ok(())
     }
 
-    pub fn read(&self) -> Result<AudioFrame, ()> {
-        match self.state {
-            MasterChanelStates::Stopped => return Err(()),
-            _ => (),
-        };
+    pub fn read(&mut self) -> Result<AudioFrame, ()> {
+        if !self.is_capturing { return Err(()) }
 
         let buffer = vec![0u8; self.wave_format.bytes_per_frame() as usize];
+        for channel in self.audio_channels.iter_mut() {
+            channel.read(None);
+        }
         todo!();
     }
 
     pub fn start(&mut self) -> Result<(), ()>{
-        match self.state {
-            MasterChanelStates::Stopped => return start(self),
-            _ => return Err(()),
-        };
-        fn start(s: &mut MasterChannel) -> Result<(), ()>{
-            todo!()
+        if self.is_capturing { return Err(());}
+        for channel in self.audio_channels.iter_mut() {
+            channel.start().unwrap()
         }
+        Ok(())
     }
 
     pub fn stop(&mut self) -> Result<(), ()>{
-        match self.state {
-            MasterChanelStates::Streaming => return start(self),
-            _ => return Err(()),
-        };
-        fn start(s: &mut MasterChannel) -> Result<(), ()>{
-            todo!()
+        if !self.is_capturing { return Err(());}
+        for channel in self.audio_channels.iter_mut() {
+            channel.stop().unwrap()
         }
+        Ok(())
     }
 
     pub fn get_default_device(&self, dataflow: EDataFlow, role: ERole) -> Result<IMMDevice, ()>{

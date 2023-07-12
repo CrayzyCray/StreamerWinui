@@ -115,9 +115,9 @@ fn audio_capturing_channel_test() {
         }
         for chn in channels.iter_mut() {
             loop {
-                match chn.read() {
+                match chn.read(None) {
                     Some(audio_frame) => {
-                        println!("bytes: {}, time: {}, st: {}", audio_frame.data.len(), audio_frame.time.as_secs_f32(), start_time.elapsed().as_secs_f32());
+                        println!("bytes: {}, time: {}", audio_frame.data.len(), audio_frame.time.as_secs_f32());
                     },
                     None => break,
                 }
