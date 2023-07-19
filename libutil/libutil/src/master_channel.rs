@@ -67,7 +67,7 @@ impl MasterChannel {
     pub fn read(&mut self) -> Result<AudioPacket, ()> {
         if !self.is_capturing { return Err(()) }
 
-        let buffer = vec![0u8; self.wave_format.bytes_per_frame() as usize];
+        //let buffer = vec![0u8; self.wave_format.bytes_per_frame() as usize];
         for channel in self.audio_channels.iter_mut() {
             channel.read2();
         }

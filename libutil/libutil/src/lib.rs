@@ -162,8 +162,6 @@ fn audio_capturing_channel_test2() {
             }
         }
     }
-
-    channel.stop().unwrap();
 }
 
 #[test]

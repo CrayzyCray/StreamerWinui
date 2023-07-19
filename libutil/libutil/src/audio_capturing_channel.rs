@@ -173,7 +173,7 @@ impl AudioCapturingChannel {
                     continue;
                 }
                 self.capture_client.GetBuffer(&mut buffer_pointer, &mut frames_captured, &mut flags, Some(&mut device_position), Some(&mut qpc_position)).unwrap();
-                let mut buffer_wasapi = slice::from_raw_parts(buffer_pointer, frames_captured as usize * self.mix_format.bytes_per_frame() as usize);
+                let buffer_wasapi = slice::from_raw_parts(buffer_pointer, frames_captured as usize * self.mix_format.bytes_per_frame() as usize);
 
                 let frames_to_copy = (frames_captured as usize).min(frames_count - frames_stored);
                 let bytes_to_copy = frames_to_copy * self.mix_format.bytes_per_frame() as usize;
