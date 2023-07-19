@@ -108,7 +108,7 @@ impl AudioCapturingChannel {
         return Ok(());
     }
 
-    pub fn read2(&self) -> Option<AudioPacket>{
+    pub fn read_one_packet(&self) -> Option<AudioPacket>{
         if !self.is_capturing {
             return None
         }

@@ -119,7 +119,7 @@ fn audio_capturing_channel_test() {
         }
         for chn in channels.iter_mut() {
             loop {
-                match chn.read2() {
+                match chn.read_one_packet() {
                     Some(audio_frame) => {
                         println!("bytes: {}, time: {}", audio_frame.data().len(), audio_frame.time().as_secs_f32());
                         file.write(audio_frame.data()).unwrap();

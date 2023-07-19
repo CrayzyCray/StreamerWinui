@@ -15,12 +15,12 @@ pub struct MasterChannel {
     audio_channels: Vec<AudioCapturingChannel>,
     master_buffer: Vec<u8>,
     last_frame_time: QPCTime,
-    packet_size: u16,
+    packet_size: usize,
     wave_format: WaveFormat,
 }
 
 impl MasterChannel {
-    pub fn new(packet_size: u16, wave_format: WaveFormat) -> Self{
+    pub fn new(packet_size: usize, wave_format: WaveFormat) -> Self{
         unsafe{
             use windows::Win32::System::Com::*;
             CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
@@ -69,7 +69,7 @@ impl MasterChannel {
 
         //let buffer = vec![0u8; self.wave_format.bytes_per_frame() as usize];
         for channel in self.audio_channels.iter_mut() {
-            channel.read2();
+            channel.read_fixed_size_packet(self.packet_size);
         }
         todo!();
     }
