@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::audio_frame::AudioFrame;
+use crate::audio_packet::AudioPacket;
 use crate::QPCTime;
 use crate::stream_writer::*;
 use crate::audio_capturing_channel::*;
@@ -9,7 +9,7 @@ use std::sync::Mutex;
 use windows::Win32::Media::Audio::*;
 use crate::WaveFormat;
 
-pub struct MasterChannel{
+pub struct MasterChannel {
     stream_writer: Arc<StreamWriter>,
     is_capturing: bool,
     audio_channels: Vec<AudioCapturingChannel>,
@@ -19,7 +19,7 @@ pub struct MasterChannel{
     wave_format: WaveFormat,
 }
 
-impl MasterChannel{
+impl MasterChannel {
     pub fn new(packet_size: u16, wave_format: WaveFormat) -> Self{
         unsafe{
             use windows::Win32::System::Com::*;
@@ -64,12 +64,12 @@ impl MasterChannel{
         Ok(())
     }
 
-    pub fn read(&mut self) -> Result<AudioFrame, ()> {
+    pub fn read(&mut self) -> Result<AudioPacket, ()> {
         if !self.is_capturing { return Err(()) }
 
         let buffer = vec![0u8; self.wave_format.bytes_per_frame() as usize];
         for channel in self.audio_channels.iter_mut() {
-            channel.read(None);
+            channel.read2();
         }
         todo!();
     }

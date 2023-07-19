@@ -5,13 +5,13 @@ use std::*;
 use slice;
 use pin::Pin;
 use time::{Duration, Instant};
+mod audio_packet;
+mod audio_capturing_channel;
 mod qpc_time;
 mod stream_writer;
 mod audio_encoder;
 //mod stream_controller;
 mod master_channel;
-mod audio_capturing_channel;
-mod audio_frame;
 mod recorder;
 mod wave_format;
 
@@ -20,7 +20,7 @@ use audio_capturing_channel::AudioCapturingChannel;
 use windows::Win32::Media::Audio::{eRender, eMultimedia, eCommunications};
 
 use qpc_time::*;
-use audio_frame::*;
+use audio_packet::*;
 use stream_writer::*;
 use audio_encoder::*;
 use master_channel::*;
@@ -95,7 +95,11 @@ pub extern fn stream_writer_add_client_as_file(stream_writer: *mut stream_writer
 // }
 #[test]
 fn audio_capturing_channel_test() {
-    let master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32));
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    let mut file = File::create("C:\\Users\\Cray\\Desktop\\St\\wasapi.raw").unwrap();
+    let master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32, 48000));
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
     //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     let mut channels = vec![];
@@ -115,9 +119,10 @@ fn audio_capturing_channel_test() {
         }
         for chn in channels.iter_mut() {
             loop {
-                match chn.read(None) {
+                match chn.read2() {
                     Some(audio_frame) => {
-                        println!("bytes: {}, time: {}", audio_frame.data.len(), audio_frame.time.as_secs_f32());
+                        println!("bytes: {}, time: {}", audio_frame.data().len(), audio_frame.time().as_secs_f32());
+                        file.write(audio_frame.data()).unwrap();
                     },
                     None => break,
                 }
@@ -132,7 +137,38 @@ fn audio_capturing_channel_test() {
 
 #[test]
 fn audio_capturing_channel_test2() {
-    let mut master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32));
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    let mut file = File::create("C:\\Users\\Cray\\Desktop\\St\\wasapi.raw").unwrap();
+    let master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32, 48000));
+    let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
+    let mut channel = AudioCapturingChannel::new(dev1, eRender);
+
+    channel.start().unwrap();
+    println!("{} latancy: {}", channel.device_name(), Duration::from_nanos(channel.stream_latency() as u64 * 100).as_secs_f32());
+    
+    let start_time = Instant::now();
+
+    loop {
+        if start_time.elapsed() > Duration::from_secs(6) {
+            break;
+        }
+        match channel.read_fixed_size_packet(960) {
+            None => break,
+            Some(audio_frame) => {
+                println!("bytes: {}, time: {}", audio_frame.data().len(), audio_frame.time().as_secs_f32());
+                file.write(audio_frame.data()).unwrap();
+            }
+        }
+    }
+
+    channel.stop().unwrap();
+}
+
+#[test]
+fn audio_capturing_channel_test3() {
+    let mut master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32, 48000));
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
     //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     master_channel.add_device(dev1, eRender).unwrap();

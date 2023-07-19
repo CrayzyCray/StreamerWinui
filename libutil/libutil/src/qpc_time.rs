@@ -10,6 +10,10 @@ impl QPCTime {
         Self(qpc as u64)
     }
 
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
     pub fn elapsed(&self) -> QPCTime {
         let mut qpc = 0;
         unsafe{QueryPerformanceCounter(&mut qpc)};
@@ -31,6 +35,10 @@ impl QPCTime {
     pub fn to_duration(&self) -> Duration {
         Duration::from_nanos(self.0 * 100)
     }
+
+    pub fn add_secs_f32(&mut self, secs: f32) {
+        self.0 += (secs * 10_000_000f32) as u64
+    }
 }
 
 impl std::ops::Sub for QPCTime {
@@ -38,5 +46,11 @@ impl std::ops::Sub for QPCTime {
 
     fn sub(self, rhs: Self) -> QPCTime {
         QPCTime(self.0 - rhs.0)
+    }
+}
+
+impl Clone for QPCTime {
+    fn clone(&self) -> Self {
+        QPCTime(self.0)
     }
 }
