@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-use std::sync::{Arc, mpsc::Receiver, mpsc::SyncSender, mpsc};
+//use std::sync::{Arc, mpsc::Receiver, mpsc::SyncSender, mpsc};
 use std::time::Duration;
 use std::*;
 use windows::{Win32::{Media::Audio::*, Devices::Properties::{DEVPKEY_Device_FriendlyName, DEVPROPKEY}}, core::PWSTR};
@@ -132,7 +131,10 @@ impl AudioCapturingChannel {
             buffer = Vec::from(slice::from_raw_parts(p_buf, buffer_size as usize).clone());
             self.capture_client.ReleaseBuffer(frames_stored).unwrap();
         }
-        return Some(AudioPacket::new(buffer, QPCTime(qpc_position)));
+        let audio_frame = AudioPacket::new(buffer, QPCTime(qpc_position));
+        println!("chn: {} bytes: {}, position: {}, time: {}", self.device_name(), audio_frame.data().len(), device_position, audio_frame.time().as_secs_f32());
+        
+        return Some(audio_frame);
     }
 
     // pub fn read(&self, count: Option<u16>) -> Option<AudioPacket> {

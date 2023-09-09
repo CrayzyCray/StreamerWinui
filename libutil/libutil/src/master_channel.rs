@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::audio_packet::AudioPacket;
 use crate::QPCTime;
 use crate::stream_writer::*;
@@ -110,31 +109,3 @@ pub enum MasterChanelStates{
     Monitoring,
     Streaming,
 }
-
-// fn mixer_loop(audio_channels: Arc<Mutex<Vec<AudioCapturingChannel>>>, stream_writer: &Arc<StreamWriter>, frame_size: usize){
-//     let mut master_buffer: Vec<f32>;
-//     let mut stop_flag = false;
-
-//     loop {
-//         let audio_channels = audio_channels.lock();
-
-//         if audio_channels.is_err(){
-//             continue;
-//         }
-
-//         let audio_channels = audio_channels.unwrap();
-
-//         for channel in audio_channels.iter() {
-//             if !channel.is_capturing() {
-//                 continue;
-//             }
-
-//             let buffer = channel.read();
-//             // if buffer.is_err() {
-//             //     continue;
-//             // }
-//             // let buffer = buffer.unwrap();
-            
-//         }
-//     }
-// }

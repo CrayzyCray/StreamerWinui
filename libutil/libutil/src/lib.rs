@@ -101,9 +101,10 @@ fn audio_capturing_channel_test() {
     let mut file = File::create("C:\\Users\\Cray\\Desktop\\St\\wasapi.raw").unwrap();
     let master_channel = MasterChannel::new(480, WaveFormat::new(2, SampleType::F32, 48000));
     let dev1 = master_channel.get_default_device(eRender, eMultimedia).unwrap();
-    //let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
+    let dev2 = master_channel.get_default_device(eRender, eCommunications).unwrap();
     let mut channels = vec![];
     channels.push(AudioCapturingChannel::new(dev1, eRender));
+    channels.push(AudioCapturingChannel::new(dev2, eRender));
     //channels.push(AudioCapturingChannel::new(dev2, eRender));
     let buffer_duration = Duration::from_nanos(channels[0].buffer_duration() as u64);
     for ele in channels.iter_mut() {
@@ -114,15 +115,15 @@ fn audio_capturing_channel_test() {
     let start_time = Instant::now();
     loop {
         std::thread::sleep(buffer_duration / 2);
-        if start_time.elapsed() > Duration::from_secs(6) {
+        if start_time.elapsed() > Duration::from_secs(3) {
             break;
         }
         for chn in channels.iter_mut() {
             loop {
                 match chn.read_one_packet() {
                     Some(audio_frame) => {
-                        println!("bytes: {}, time: {}", audio_frame.data().len(), audio_frame.time().as_secs_f32());
-                        file.write(audio_frame.data()).unwrap();
+                        //println!("chn: {} bytes: {}, time: {}", chn.device_name(), audio_frame.data().len(), audio_frame.time().as_secs_f32());
+                        //file.write(audio_frame.data()).unwrap();
                     },
                     None => break,
                 }
@@ -176,6 +177,7 @@ fn audio_capturing_channel_test3() {
     master_channel.stop().unwrap();
 }
 
+
 // #[no_mangle]
 // #[test]
 // pub extern fn start_acc_test() {
@@ -203,7 +205,7 @@ fn audio_capturing_channel_test3() {
 //         write_to_file(audio_frame.data(), &mut file);
 //         counter += 1;
 //         //if counter > (48000 / 960) * 2 {break;}
-//         if t.elapsed().unwrap() >= Duration::from_secs(4){
+//         if t.elapsed(;).unwrap() >= Duration::from_secs(4){
 //             break;}
 //     }
 //     acc.stop().unwrap();
